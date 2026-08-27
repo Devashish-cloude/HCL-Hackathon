@@ -1,7 +1,7 @@
 import api from './api.js';
 import { LearningPathData, User } from '../types/index.js';
 import { getRoleCurriculum } from '../lib/roleCurricula.js';
-import { userProgressStore } from './userProgressStore.js';
+import { userProgressStore, StoredProgress } from './userProgressStore.js';
 
 function getStoredUser(): User | null {
   try {
@@ -152,19 +152,31 @@ function createRoleSpecificLearningPath(user: User): LearningPathData {
 
   const completedFocusCount = progress.completedFocusTaskIds.length;
   const completedLessonsCount = progress.completedLessonKeys.length;
+  const totalCompletedUnits = completedFocusCount + completedLessonsCount;
   const timeInvestedHours = Math.round((progress.timeInvestedMinutes / 60) * 10) / 10;
 
-  // Compute dynamic overall progress
+  // Phase 1 is done when user has completed 2+ tasks/lessons
+  const isPhase1Done = totalCompletedUnits >= 2;
+  const isPhase2Done = totalCompletedUnits >= 5;
+
+  // Dynamic Overall Progress
   const dynamicOverallProgress = Math.min(
     100,
-    Math.round((completedFocusCount * 12) + (completedLessonsCount * 18))
+    Math.round(totalCompletedUnits * 20)
   );
-
-  const isPhase1Done = completedFocusCount >= 3 || completedLessonsCount >= 2;
-  const isPhase2Done = completedLessonsCount >= 5;
 
   const totalEstHours = config.learningPhases.reduce((acc, p) => acc + p.estimatedHours, 0);
   const estRemaining = Math.max(5, totalEstHours - Math.round(timeInvestedHours));
+
+  // Determine current focus title
+  let currentFocusTitle = config.learningPhases[0]?.modules[0]?.title || 'Fundamentals';
+  if (isPhase2Done) {
+    currentFocusTitle = config.learningPhases[2]?.modules[0]?.title || 'Advanced Systems';
+  } else if (isPhase1Done) {
+    currentFocusTitle = config.learningPhases[1]?.modules[0]?.title || 'Modern Architecture';
+  } else if (totalCompletedUnits >= 1) {
+    currentFocusTitle = config.learningPhases[0]?.modules[0]?.title || 'Language Primitives';
+  }
 
   return {
     id: `path-${Date.now()}`,
@@ -175,9 +187,7 @@ function createRoleSpecificLearningPath(user: User): LearningPathData {
       overallProgress: dynamicOverallProgress,
       timeInvestedHours: timeInvestedHours,
       estimatedRemainingHours: estRemaining,
-      currentFocus: isPhase1Done
-        ? config.learningPhases[1]?.modules[0]?.title || 'Core Architecture'
-        : config.learningPhases[0]?.modules[0]?.title || 'Fundamentals',
+      currentFocus: currentFocusTitle,
     },
     phases: config.learningPhases.map((phase, idx) => {
       let phaseStatus: 'COMPLETED' | 'IN_PROGRESS' | 'LOCKED' = 'LOCKED';
@@ -191,6 +201,9 @@ function createRoleSpecificLearningPath(user: User): LearningPathData {
           phaseStatus = isPhase2Done ? 'COMPLETED' : 'IN_PROGRESS';
           iconType = isPhase2Done ? 'check' : 'academic';
         }
+      } else if (idx === 2 && isPhase2Done) {
+        phaseStatus = 'IN_PROGRESS';
+        iconType = 'academic';
       }
 
       if (idx === config.learningPhases.length - 1 && phaseStatus === 'LOCKED') {
@@ -212,30 +225,39 @@ function createRoleSpecificLearningPath(user: User): LearningPathData {
           let isCurrent = false;
 
           if (idx === 0) {
+            // Phase 1 Modules
             if (mIdx === 0) {
-              if (completedFocusCount >= 2 || completedLessonsCount >= 1) {
+              if (totalCompletedUnits >= 1) {
                 modStatus = 'COMPLETED';
                 modProgress = 100;
               } else {
                 modStatus = 'IN_PROGRESS';
-                modProgress = completedFocusCount * 50;
+                modProgress = 0;
                 isCurrent = true;
               }
             } else if (mIdx === 1) {
               if (isPhase1Done) {
                 modStatus = 'COMPLETED';
                 modProgress = 100;
-              } else if (completedFocusCount >= 2) {
+              } else if (totalCompletedUnits >= 1) {
                 modStatus = 'IN_PROGRESS';
                 modProgress = 50;
                 isCurrent = true;
               }
             }
-          } else if (idx === 1 && isPhase1Done) {
-            if (mIdx === 0) {
-              modStatus = 'IN_PROGRESS';
-              modProgress = Math.min(100, completedLessonsCount * 25);
-              isCurrent = true;
+          } else if (idx === 1) {
+            // Phase 2 Modules
+            if (isPhase1Done) {
+              if (mIdx === 0) {
+                if (isPhase2Done) {
+                  modStatus = 'COMPLETED';
+                  modProgress = 100;
+                } else {
+                  modStatus = 'IN_PROGRESS';
+                  modProgress = Math.min(100, (totalCompletedUnits - 2) * 35);
+                  isCurrent = true;
+                }
+              }
             }
           }
 
@@ -296,6 +318,22 @@ export const learningPathService = {
           });
       return { success: true, data };
     }
+  },
+
+  async advanceCurrentModule(): Promise<{ success: boolean }> {
+    const currentUser = getStoredUser();
+    const progress = userProgressStore.getProgress(currentUser?.id);
+    
+    // Add a virtual completed unit
+    const dummyKey = `manual-advance-${Date.now()}`;
+    const updated: StoredProgress = {
+      ...progress,
+      completedFocusTaskIds: [...progress.completedFocusTaskIds, `task-${Date.now()}`],
+      completedLessonKeys: [...progress.completedLessonKeys, dummyKey],
+      timeInvestedMinutes: progress.timeInvestedMinutes + 30,
+    };
+    userProgressStore.saveProgress(updated, currentUser?.id);
+    return { success: true };
   },
 
   async generatePath(data: {
