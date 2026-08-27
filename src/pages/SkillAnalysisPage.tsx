@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useOutletContext } from 'react-router-dom';
 import { skillService } from '../services/skillService.js';
+import { useAuth } from '../contexts/AuthContext.js';
 import { SkillAnalysisData } from '../types/index.js';
 import { Card } from '../components/common/Card.js';
 import { Button } from '../components/common/Button.js';
@@ -11,10 +12,14 @@ import {
   Activity,
   AlertTriangle,
   Code2,
+  Sparkles,
+  ArrowRight,
+  TrendingUp,
 } from 'lucide-react';
 
 export const SkillAnalysisPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const context = useOutletContext<{ openAssessmentModal?: () => void }>();
   const [data, setData] = useState<SkillAnalysisData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -37,7 +42,7 @@ export const SkillAnalysisPage: React.FC = () => {
     const handleRefresh = () => fetchSkills();
     window.addEventListener('learnpath:refresh', handleRefresh);
     return () => window.removeEventListener('learnpath:refresh', handleRefresh);
-  }, []);
+  }, [user?.id]);
 
   if (isLoading || !data) {
     return (
@@ -52,6 +57,14 @@ export const SkillAnalysisPage: React.FC = () => {
   }
 
   const { primaryAssessment, recommendedNextStep, gapAreas } = data;
+
+  const roleTag = user?.targetRole?.includes('AI')
+    ? 'AI'
+    : user?.targetRole?.includes('Full')
+    ? 'FS'
+    : user?.targetRole?.includes('Backend')
+    ? 'BE'
+    : 'FE';
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
@@ -70,7 +83,7 @@ export const SkillAnalysisPage: React.FC = () => {
           variant="primary"
           size="md"
           onClick={() => context?.openAssessmentModal && context.openAssessmentModal()}
-          className="font-semibold shadow-sm"
+          className="font-semibold shadow-sm cursor-pointer"
         >
           New Assessment
         </Button>
@@ -86,8 +99,8 @@ export const SkillAnalysisPage: React.FC = () => {
             <div className="flex items-start justify-between">
               <div>
                 <div className="flex items-center gap-2">
-                  <div className="w-5 h-5 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded flex items-center justify-center font-bold text-xs">
-                    JS
+                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 rounded-md flex items-center justify-center font-bold text-xs">
+                    {roleTag}
                   </div>
                   <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                     {primaryAssessment.category}
@@ -134,12 +147,12 @@ export const SkillAnalysisPage: React.FC = () => {
                     <div className="flex-1">
                       <div className="w-full bg-slate-100 dark:bg-slate-800 h-2 rounded-full overflow-hidden">
                         <div
-                          className="bg-blue-300 dark:bg-blue-400 h-full rounded-full"
+                          className="bg-blue-600 dark:bg-blue-400 h-full rounded-full transition-all duration-300"
                           style={{ width: `${comp.proficiencyScore}%` }}
                         />
                       </div>
                     </div>
-                    <span className="w-10 text-right font-bold text-slate-700 dark:text-slate-300">
+                    <span className="w-10 text-right text-slate-900 dark:text-slate-100 font-bold">
                       {comp.proficiencyScore}%
                     </span>
                   </div>
@@ -149,93 +162,80 @@ export const SkillAnalysisPage: React.FC = () => {
           </Card>
 
           {/* Recommended Next Step Card */}
-          <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm">
-            <span className="text-[11px] font-bold tracking-wider text-slate-500 dark:text-slate-400 uppercase">
-              RECOMMENDED NEXT STEP
-            </span>
+          <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
+                Recommended Next Step
+              </h3>
+            </div>
 
-            <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 rounded-2xl bg-blue-50 dark:bg-blue-950/60 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0">
-                  <GraduationCap className="w-6 h-6" />
-                </div>
-                <div>
-                  <h4 className="text-base font-bold text-slate-900 dark:text-slate-100">
-                    {recommendedNextStep.title}
-                  </h4>
-                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 max-w-md leading-relaxed">
-                    {recommendedNextStep.description}
-                  </p>
-                  <div className="flex items-center gap-2 mt-3">
-                    <Badge variant="slate" size="sm">
-                      {recommendedNextStep.estimatedHours}
-                    </Badge>
-                    <Badge variant="blue" size="sm">
-                      {recommendedNextStep.typeLabel}
-                    </Badge>
-                  </div>
+            <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+              <div className="space-y-1">
+                <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100">
+                  {recommendedNextStep.title}
+                </h4>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {recommendedNextStep.description}
+                </p>
+                <div className="flex items-center gap-2 pt-1">
+                  <Badge variant="slate" size="sm">
+                    {recommendedNextStep.typeLabel}
+                  </Badge>
+                  <span className="text-[11px] text-slate-400">
+                    {recommendedNextStep.estimatedHours}
+                  </span>
                 </div>
               </div>
 
               <Button
-                variant="outline"
-                size="md"
+                variant="primary"
+                size="sm"
                 onClick={() => navigate(`/courses/${recommendedNextStep.courseSlug}`)}
-                className="w-full sm:w-auto font-semibold border-slate-300 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 whitespace-nowrap"
+                className="font-semibold text-xs whitespace-nowrap cursor-pointer"
+                rightIcon={<ArrowRight className="w-3.5 h-3.5" />}
               >
-                Start Course
+                Start Practice
               </Button>
             </div>
           </Card>
         </div>
 
         {/* Right Column: Identified Gap Areas (1 Col) */}
-        <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6">
-          <div className="flex items-center gap-2">
-            <Activity className="w-5 h-5 text-red-500" />
-            <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">
-              Identified Gap Areas
-            </h3>
-          </div>
+        <div className="space-y-4">
+          <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="w-4 h-4 text-amber-500" />
+              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                Identified Gap Areas
+              </h3>
+            </div>
 
-          <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-            Based on your recent assessments and code reviews, these areas require focus to reach your target Advanced level.
-          </p>
-
-          <div className="space-y-5">
-            {gapAreas.map((gap) => {
-              const isCritical = gap.severity === 'Critical';
-              return (
-                <div key={gap.id} className="space-y-1.5">
-                  <div className="flex items-center justify-between text-xs">
-                    <span className="font-bold text-slate-900 dark:text-slate-100">
+            <div className="space-y-3">
+              {gapAreas.map((gap) => (
+                <div
+                  key={gap.id}
+                  className="p-3.5 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/30 space-y-1.5"
+                >
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-bold text-slate-900 dark:text-slate-100">
                       {gap.skillName}
                     </span>
-                    <span
-                      className={`text-[11px] font-bold ${
-                        isCritical ? 'text-red-500' : 'text-slate-400 dark:text-slate-500'
-                      }`}
+                    <Badge
+                      variant={gap.severity === 'Critical' ? 'red' : 'amber'}
+                      size="sm"
                     >
                       {gap.severity}
-                    </span>
+                    </Badge>
                   </div>
-
-                  <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-snug">
                     {gap.description}
                   </p>
-
-                  <div className="w-full bg-slate-100 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden mt-2">
-                    <div
-                      className={`h-full rounded-full ${
-                        isCritical ? 'bg-red-500 w-1/4' : 'bg-slate-400 dark:bg-slate-600 w-1/2'
-                      }`}
-                    />
-                  </div>
                 </div>
-              );
-            })}
-          </div>
-        </Card>
+              ))}
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
