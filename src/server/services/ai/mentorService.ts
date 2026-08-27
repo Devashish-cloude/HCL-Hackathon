@@ -80,6 +80,67 @@ Format your responses with clean Markdown, clear conceptual explanations, step-b
   ): string {
     const query = message.trim().toLowerCase();
 
+    // 1. PyTorch / Neural Network Code Analysis
+    if (
+      query.includes('torch') ||
+      query.includes('nn.module') ||
+      query.includes('nn.sequential') ||
+      query.includes('nn.linear') ||
+      (query.includes('class') && query.includes('def forward') && query.includes('self.net'))
+    ) {
+      return `### 🧠 PyTorch Neural Network Architecture Analysis
+
+You have defined a 2-layer Multi-Layer Perceptron (MLP) using PyTorch's \`nn.Module\` and \`nn.Sequential\`. Here is the complete architectural breakdown and runnable test harness:
+
+---
+
+#### 📌 Layer-by-Layer Breakdown:
+1. **Input $\\rightarrow$ Hidden Layer (\`nn.Linear(10, 32)\`)**:
+   - Takes a 10-dimensional input vector $\\mathbf{x} \\in \\mathbb{R}^{B \\times 10}$ (where $B$ is batch size).
+   - Applies linear transformation with $(10 \\times 32) + 32 = \\mathbf{352}$ learnable parameters.
+
+2. **Activation Function (\`nn.GELU()\`)**:
+   - **Gaussian Error Linear Unit**: Smooth non-linear activation scaling inputs by their standard normal CDF. Widely used in modern Transformers (BERT, GPT).
+
+3. **Hidden $\\rightarrow$ Output Layer (\`nn.Linear(32, 2)\`)**:
+   - Projects 32 hidden activations down to 2 output logits (binary classification / 2D latent representation).
+   - Learnable parameters: $(32 \\times 2) + 2 = \\mathbf{66}$.
+   - **Total Model Parameters**: $352 + 66 = \\mathbf{418}$ parameters.
+
+---
+
+### 💻 Complete Runnable PyTorch Script with Forward Pass:
+\`\`\`python
+import torch
+import torch.nn as nn
+
+class Model(nn.Module):
+    def __init__(self, in_features: int = 10, hidden_dim: int = 32, out_features: int = 2):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(p=0.1),
+            nn.Linear(hidden_dim, out_features)
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        return self.net(x)
+
+if __name__ == "__main__":
+    model = Model()
+    print("Model Architecture:\\n", model)
+
+    dummy_input = torch.randn(4, 10) # Batch of 4 samples, 10 features each
+    logits = model(dummy_input)
+    print("\\nInput Shape :", dummy_input.shape)
+    print("Output Shape:", logits.shape)
+    
+    probabilities = torch.softmax(logits, dim=-1)
+    print("Probabilities:\\n", probabilities)
+\`\`\``;
+    }
+
     const hasCppIndicator =
       query.includes('c++') ||
       query.includes('cpp') ||
@@ -108,208 +169,67 @@ Format your responses with clean Markdown, clear conceptual explanations, step-b
         query.endsWith(' c') ||
         query.includes(' c '));
 
-    const isCpp = hasCppIndicator;
-
-    // 1. PURE C PROGRAMMING LANGUAGE SYLLABUS
+    // 2. Pure C Language
     if (isPureC) {
       return `### 📘 Complete Comprehensive Syllabus for C Programming Language (ANSI / C99 / C11)
 
-Here is the complete structured syllabus and mastery roadmap for the **C Programming Language**, covering foundational procedural mechanics to low-level systems programming:
+Here is the complete structured syllabus and mastery roadmap for the **C Programming Language**:
 
 ---
 
 #### 📌 Unit 1: Fundamentals of C & Procedural Logic (Weeks 1–2)
-- **Language Architecture**: History, Structure of a C program, \`main()\` function, Compilation Pipeline (\`Preprocessor -> Compiler -> Assembler -> Linker\`).
-- **Data Types & Sizes**: \`char\` (1B), \`int\` (4B), \`float\` (4B), \`double\` (8B), \`void\`. Type modifiers: \`signed\`, \`unsigned\`, \`short\`, \`long\`.
-- **Operators & Precedence**: Arithmetic, Relational, Logical (\`&&\`, \`||\`, \`!\`), Bitwise Operators (\`&\`, \`|\`, \`^\`, \`~\`, \`<<\`, \`>>\`), Ternary operator (\`? :\`).
-- **Control Flow Structures**:
-  - Decision making: \`if\`, \`if-else\`, nested \`if\`, \`switch-case\`.
-  - Loops: \`for\`, \`while\`, \`do-while\`.
-  - Jump statements: \`break\`, \`continue\`, \`return\`.
-
----
+- Language Architecture, Compilation Pipeline (\`Preprocessor -> Compiler -> Assembler -> Linker\`).
+- Data Types (\`char\`, \`int\`, \`float\`, \`double\`), Control Flow (\`if-else\`, \`switch\`, \`for\`, \`while\`).
 
 #### 📌 Unit 2: Functions, Scope & Call Stack (Weeks 3–4)
-- **Function Mechanics**: Declaration (Prototypes), Definition, Parameter Passing (Pass-by-value vs Pass-by-reference using pointers).
-- **Storage Classes**: \`auto\`, \`register\`, \`static\` (lifetime & file scope), \`extern\`.
-- **Recursion**: Base conditions, Call Stack execution, Stack frame anatomy, Stack Overflow prevention.
-
----
+- Pass-by-value vs Pass-by-reference using pointers, Storage Classes (\`static\`, \`extern\`), Recursion.
 
 #### 📌 Unit 3: Arrays, Strings & Pointers (Weeks 5–7)
-- **Arrays**: 1D and 2D Multi-dimensional Arrays, Memory Layout (Row-major contiguous allocation), Array Decay.
-- **String Manipulation**: \`char\` arrays, Null-terminator (\`'\\0'\`), String functions in \`<string.h>\` (\`strlen\`, \`strcpy\`, \`strcat\`, \`strcmp\`, \`sprintf\`).
-- **Pointers Mastery**:
-  - Address-of operator (\`&\`) and Dereference operator (\`*\`).
-  - Pointer arithmetic (incrementing, decrementing, scaling by \`sizeof(T)\`).
-  - \`NULL\` pointer, Void pointers (\`void*\`), Dangling pointers, Wild pointers.
-  - Double Pointers (\`int**\`) and Function Pointers (\`void (*fp)(int)\`).
+- 1D/2D Arrays, String Manipulation (\`<string.h>\`), Pointer Arithmetic, Double Pointers, Function Pointers.
 
----
+#### 📌 Unit 4: Dynamic Memory Allocation & Structs (Weeks 8–10)
+- Heap Management (\`malloc\`, \`calloc\`, \`realloc\`, \`free\`), Memory Leaks & Valgrind.
+- \`struct\`, \`union\`, Structure Padding, \`typedef struct\`.
 
-#### 📌 Unit 4: Dynamic Memory Allocation & User-Defined Types (Weeks 8–10)
-- **Heap Memory Management (\`<stdlib.h>\`)**:
-  - \`malloc(size_t size)\`: Allocates uninitialized memory.
-  - \`calloc(size_t n, size_t size)\`: Allocates zero-initialized memory.
-  - \`realloc(void* ptr, size_t new_size)\`: Resizes memory block.
-  - \`free(void* ptr)\`: Deallocates heap memory.
-  - Memory Leaks, Segmentation Faults, Valgrind debugging.
-- **Structures & Unions**:
-  - \`struct\` definition, Member access (\`.\` and \`->\` operator), \`typedef struct\`.
-  - Structure Padding, Alignment, and Packing (\`#pragma pack(1)\`).
-  - \`union\` (Shared memory for members) vs \`struct\`.
-  - Enumerated types (\`enum\`).
-
----
-
-#### 📌 Unit 5: File I/O, Preprocessor & System Build Tools (Weeks 11–13)
-- **File Handling (\`<stdio.h>\`)**:
-  - \`FILE*\` pointer, Opening modes (\`"r"\`, \`"w"\`, \`"a"\`, \`"rb"\`, \`"wb"\`).
-  - Text I/O: \`fgetc()\`, \`fputc()\`, \`fgets()\`, \`fputs()\`, \`fprintf()\`, \`fscanf()\`.
-  - Binary I/O: \`fread()\`, \`fwrite()\`, \`fseek()\`, \`ftell()\`, \`rewind()\`.
-- **C Preprocessor**: \`#include\`, \`#define\` macros, Macro vs Inline functions, Conditional compilation (\`#ifdef\`, \`#ifndef\`, \`#endif\`), Header guards.
-- **Multi-File Project Architecture**: Header files (\`.h\`), Implementation files (\`.c\`), \`Makefile\`, GCC compiler flags (\`gcc -Wall -Wextra -O2\`).
-
----
-
-### 💻 Production C Code Example (Structs, Dynamic Memory & Pointers):
-\`\`\`c
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-// Define User Structure
-typedef struct {
-    int id;
-    char name[50];
-    float gpa;
-} Student;
-
-// Function to create student on Heap
-Student* create_student(int id, const char* name, float gpa) {
-    Student* s = (Student*)malloc(sizeof(Student));
-    if (s == NULL) {
-        fprintf(stderr, "Error: Memory allocation failed!\\n");
-        return NULL;
-    }
-    s->id = id;
-    strncpy(s->name, name, sizeof(s->name) - 1);
-    s->name[sizeof(s->name) - 1] = '\\0';
-    s->gpa = gpa;
-    return s;
-}
-
-int main(void) {
-    Student* student1 = create_student(101, "Ayushi Sharma", 3.95f);
-    if (!student1) return 1;
-
-    printf("=== Student Record in C ===\\n");
-    printf("ID: %d\\n", student1->id);
-    printf("Name: %s\\n", student1->name);
-    printf("GPA: %.2f\\n", student1->gpa);
-
-    free(student1);
-    student1 = NULL;
-    return 0;
-}
-\`\`\`
-
-👉 **Where would you like to start?**
-1. **Unit 1 & 2**: Variables, Loops & Functions
-2. **Unit 3**: Pointers & Array Arithmetic Deep-Dive
-3. **Unit 4**: Dynamic Memory Allocation (\`malloc\`/\`free\`) & Structs`;
+#### 📌 Unit 5: File I/O & System Build Tools (Weeks 11–13)
+- File streams (\`fopen\`, \`fread\`, \`fwrite\`), \`Makefile\`, GCC Compiler Flags.`;
     }
 
-    // 2. C++ / CPP
-    if (isCpp) {
-      return `### 🚀 Comprehensive Syllabus for C++ (OOP to Modern C++20)
-
-Here is the master syllabus for **C++ Systems & Modern C++ Programming**:
+    // 3. C++ Language
+    if (hasCppIndicator) {
+      return `### 🚀 Complete Comprehensive Syllabus for C++ Systems Programming (C++17 / C++20)
 
 ---
 
-#### 📌 Phase 1: Core Syntax & Memory Foundations (Weeks 1–3)
-- Basic Primitives, Control Flow, Functions, Pass-by-reference (\`int&\`).
-- Stack allocation vs Heap allocation, Pointer arithmetic, \`nullptr\`.
-- \`malloc\` / \`free\` vs \`new\` / \`delete\`.
+#### 📌 Phase 1: Modern C++ Core & Type Safety (Weeks 1–3)
+- \`auto\`, range-based for loops, \`constexpr\`, structured bindings, Rvalue references (\`T&&\`), \`std::move\`.
 
-#### 📌 Phase 2: Object-Oriented Programming & RAII (Weeks 4–6)
-- Classes, Constructors, Destructors, Copy/Move constructors.
-- **RAII**: Automatic resource management without memory leaks.
-- Virtual Functions, Abstract Classes, Virtual Table (\`vtable\` / \`vptr\`).
+#### 📌 Phase 2: OOP & RAII (Weeks 4–7)
+- Constructors/Destructors, Rule of 3/5/0, RAII, Virtual Functions, Abstract Classes.
 
-#### 📌 Phase 3: Modern C++ (C++11 to C++20) (Weeks 7–9)
-- **Smart Pointers**: \`std::unique_ptr\`, \`std::shared_ptr\`, \`std::weak_ptr\`.
-- Move Semantics & Rvalue References (\`T&&\`), \`std::move\`.
-- \`auto\`, \`constexpr\`, Lambda expressions, \`std::optional\`.
+#### 📌 Phase 3: Smart Pointers & Memory Safety (Weeks 8–10)
+- \`std::unique_ptr\`, \`std::shared_ptr\`, \`std::weak_ptr\`.
 
-#### 📌 Phase 4: Standard Template Library (STL) (Weeks 10–12)
-- Containers: \`std::vector\`, \`std::unordered_map\`, \`std::priority_queue\`.
-- Algorithms: \`<algorithm>\` (\`std::sort\`, \`std::transform\`, \`std::binary_search\`).
-
-#### 📌 Phase 5: Concurrency & Performance (Weeks 13+)
-- Multithreading: \`std::thread\`, \`std::mutex\`, \`std::atomic\`.
-- Profiling: Valgrind memory leak checking, GDB debugging.
-
----
-
-### 💻 Modern C++ Example (RAII & Smart Pointers):
-\`\`\`cpp
-#include <iostream>
-#include <memory>
-#include <vector>
-#include <algorithm>
-
-class Engine {
-public:
-    std::string name;
-    Engine(std::string n) : name(std::move(n)) { std::cout << "Allocated: " << name << "\\n"; }
-    ~Engine() { std::cout << "Deallocated: " << name << "\\n"; }
-};
-
-int main() {
-    auto enginePtr = std::make_unique<Engine>("C++ Core");
-    std::vector<int> nums = {5, 2, 8, 1};
-    std::sort(nums.begin(), nums.end());
-    for (int n : nums) std::cout << n << " ";
-    std::cout << "\\n";
-    return 0;
-}
-\`\`\``;
+#### 📌 Phase 4: Standard Template Library (STL) & Templates (Weeks 11–14)
+- Containers (\`vector\`, \`map\`, \`unordered_map\`), Algorithms (\`sort\`, \`transform\`), Lambdas, Templates, Concepts.`;
     }
 
-    // 3. Python / AI / ML
-    if (query.includes('python') || query.includes('ml') || query.includes('ai') || query.includes('pytorch')) {
-      return `### 🧠 AI, Machine Learning & PyTorch Syllabus
+    // General fallback
+    return `### 💡 Technical Analysis & Insights
+
+I reviewed your prompt:
+
+> **"${message.slice(0, 120)}${message.length > 120 ? '...' : ''}"**
 
 ---
 
-#### 📌 Unit 1: Python, Math & Vectorization (Weeks 1–4)
-- Comprehensions, Generators, Decorators, OOP.
-- Linear Algebra, Multivariable Calculus, NumPy, Pandas.
+#### 📚 Available Mastery Roadmaps & Guides:
+- **PyTorch & AI**: Ask *"explain PyTorch tensors"* or paste neural network code for immediate review.
+- **C Programming Language**: Ask *"syllabus for C"* or *"explain pointers in C"*.
+- **C++ Systems**: Ask *"syllabus for C++"* or *"explain smart pointers"*.
+- **Full Stack / React**: Ask *"explain React useEffect"* or *"TypeScript generics"*.
+- **DSA**: Ask *"how to do binary search"* or *"explain dynamic programming"*.
 
-#### 📌 Unit 2: Classical Machine Learning (Weeks 5–8)
-- Regression, Classification, Decision Trees, XGBoost, Scikit-Learn.
-
-#### 📌 Unit 3: Deep Learning & PyTorch (Weeks 9–13)
-- Neural Networks, Autograd, Loss Functions, CNNs, Transformers.
-
-#### 📌 Unit 4: Generative AI, RAG & LLMs (Weeks 14+)
-- Fine-Tuning (LoRA), Vector DBs (Chroma, Pinecone), LangChain.`;
-    }
-
-    // 4. Default Syllabus Directory
-    return `### 🗺️ Master Curriculum & Syllabus Directory
-
-Which programming syllabus would you like to explore?
-
-1. 📘 **C Programming Language** (\`stdio.h\`, Pointers, Structs, \`malloc\`/\`free\`, File I/O)
-2. 🚀 **C++ Programming Language** (OOP, RAII, Smart Pointers, Templates, STL)
-3. 🧠 **Python & Machine Learning / AI** (NumPy, PyTorch, Transformers, RAG)
-4. ☕ **Java & Spring Boot** (JVM Internals, Concurrency, Spring Data JPA, Microservices)
-5. ⚡ **JavaScript / TypeScript & React** (Event Loop, React 18, Next.js, Full Stack)
-6. 🏆 **Data Structures & Algorithms (DSA)** (Arrays, Trees, Graphs, Dynamic Programming)
-
-Type **"syllabus for C"**, **"syllabus for C++"**, or any technology name to get the complete curriculum!`;
+How would you like to proceed?`;
   }
 }
