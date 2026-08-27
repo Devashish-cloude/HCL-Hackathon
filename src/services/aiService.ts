@@ -41,40 +41,6 @@ const devashishConversations: Conversation[] = [
       },
     ],
   },
-  {
-    id: 'conv-2',
-    title: 'Understanding Promises',
-    category: 'JavaScript',
-    timeGroup: 'TODAY',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString(),
-    messages: [
-      {
-        id: 'm-4',
-        role: 'assistant',
-        content:
-          'A Promise in JavaScript represents an operation that has not completed yet, but is expected to in the future. It can be in one of 3 states: Pending, Fulfilled, or Rejected.',
-        createdAt: new Date().toISOString(),
-      },
-    ],
-  },
-  {
-    id: 'conv-3',
-    title: 'React Hooks Deep Dive',
-    category: 'React',
-    timeGroup: 'YESTERDAY',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      {
-        id: 'm-5',
-        role: 'assistant',
-        content:
-          'React Hooks let you use state and other React features without writing a class. The fundamental hooks are `useState`, `useEffect`, and `useContext`.',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ],
-  },
 ];
 
 function createNewUserConversations(user: User): Conversation[] {
@@ -101,12 +67,17 @@ function createNewUserConversations(user: User): Conversation[] {
 export function generateIntelligentAIResponse(message: string): string {
   const query = message.trim().toLowerCase();
 
-  // 1. C++ / C / CPP Roadmap & Study Flow
+  // 1. C++ / C / CPP / C+
   if (
     query.includes('c++') ||
     query.includes('c+') ||
     query.includes('cpp') ||
-    (query.includes('c') && (query.includes('study') || query.includes('flow') || query.includes('learn') || query.includes('roadmap') || query.includes('pointer')))
+    query.includes(' c ') ||
+    query.startsWith('c ') ||
+    query.endsWith(' c') ||
+    query.includes('pointer') ||
+    query.includes('memory') ||
+    query.includes('stl')
   ) {
     return `### 🚀 Comprehensive Study Flow for C++ (Zero to Advanced)
 
@@ -196,14 +167,15 @@ int main() {
 Would you like to start with **Pointers and Memory Management** exercises, or dive into **STL Data Structures** first?`;
   }
 
-  // 2. Python / Machine Learning / AI
+  // 2. Python / Machine Learning / AI / Data Science
   if (
     query.includes('python') ||
     query.includes('ml') ||
     query.includes('machine learning') ||
-    query.includes('artificial intelligence') ||
+    query.includes('ai') ||
     query.includes('deep learning') ||
     query.includes('pytorch') ||
+    query.includes('tensorflow') ||
     query.includes('rag') ||
     query.includes('llm')
   ) {
@@ -249,7 +221,6 @@ Here is the industry-standard curriculum for mastering **Artificial Intelligence
 \`\`\`python
 import torch
 import torch.nn as nn
-import torch.optim as optim
 
 class NeuralClassifier(nn.Module):
     def __init__(self, input_dim=10, hidden_dim=64, num_classes=2):
@@ -264,18 +235,14 @@ class NeuralClassifier(nn.Module):
     def forward(self, x):
         return self.net(x)
 
-# Initialize model, loss, and optimizer
 model = NeuralClassifier()
-criterion = nn.CrossEntropyLoss()
-optimizer = optim.AdamW(model.parameters(), lr=1e-3)
-
-print("Initialized Neural Model Architecture:\\n", model)
+print("Initialized PyTorch Model:\\n", model)
 \`\`\`
 
 Would you like to explore **Neural Network Mathematics** or **Building a RAG Pipeline** next?`;
   }
 
-  // 3. Java / Spring Boot / Backend
+  // 3. Java / Spring Boot
   if (
     query.includes('java') ||
     query.includes('spring') ||
@@ -310,12 +277,6 @@ Here is the roadmap for mastering **Java, JVM Architecture, and Spring Boot Micr
 
 ---
 
-#### 📌 Phase 4: Security, Microservices & Cloud (Weeks 12+)
-- **Security**: Spring Security 6, JWT Bearer authentication, OAuth2.
-- **Distributed Architecture**: Kafka message streaming, Redis caching, Docker containerization, PostgreSQL.
-
----
-
 ### 💻 Spring Boot RestController Example:
 \`\`\`java
 @RestController
@@ -346,145 +307,118 @@ Would you like to practice **Java Multithreading** or dive into **Spring Data JP
     query.includes('react') ||
     query.includes('frontend') ||
     query.includes('node') ||
-    query.includes('next.js') ||
-    query.includes('vue')
+    query.includes('css') ||
+    query.includes('flexbox') ||
+    query.includes('async') ||
+    query.includes('promise')
   ) {
-    return `### ⚡ Complete Study Flow for Modern Full-Stack JavaScript & React
+    if (query.includes('flexbox') || query.includes('center')) {
+      return `### 🎨 Mastering CSS Flexbox & Centering
 
-Here is the step-by-step roadmap to become a high-level **Frontend / Full-Stack Engineer**:
+Flexbox operates along two primary axes: the **Main Axis** (defined by \`flex-direction\`) and the **Cross Axis** (perpendicular to the main axis).
+
+#### Key Properties:
+- **\`justify-content\`**: Controls alignment along the **Main Axis** (defaults to horizontal row).
+  - \`center\`: Groups items in the center.
+  - \`space-between\`: Distributes items evenly with first/last at edges.
+- **\`align-items\`**: Controls alignment along the **Cross Axis** (defaults to vertical column).
+  - \`center\`: Vertically centers items.
+  - \`stretch\`: Expands items to fill cross-axis height.
+
+\`\`\`css
+.center-container {
+  display: flex;
+  justify-content: center; /* Center along Main Axis */
+  align-items: center;     /* Center along Cross Axis */
+  min-height: 100vh;
+}
+\`\`\``;
+    }
+
+    return `### ⚡ Complete Study Flow for Modern Full-Stack JavaScript & React
 
 ---
 
 #### 📌 Phase 1: JavaScript Runtime & Asynchronous Core (Weeks 1–3)
 - **Runtime Mechanics**: Execution Context, Call Stack (LIFO), Lexical Scope, Closures.
 - **Event Loop**: Microtask Queue (Promises, \`queueMicrotask\`) vs Macrotask Queue (\`setTimeout\`).
-- **Modern ES6+**: Destructuring, Spread/Rest, Optional Chaining (\`?.\`), Nullish Coalescing (\`??\`), Modules.
 - **Asynchronous Flow**: Promises, \`async/await\`, \`Promise.allSettled\`, Error bubbling with \`try/catch\`.
 
 ---
 
 #### 📌 Phase 2: TypeScript & Type Systems (Weeks 4–5)
-- **Type Safety**: Interfaces, Type Aliases, Generics, Discriminated Unions.
-- **Advanced Types**: Utility Types (\`Partial\`, \`Pick\`, \`Omit\`, \`Record\`), Type Narrowing, Zod runtime validation.
+- **Type Safety**: Interfaces, Type Aliases, Generics, Discriminated Unions, Zod validation.
 
 ---
 
 #### 📌 Phase 3: React 18 Architecture (Weeks 6–9)
-- **Core Principles**: Declarative UI, Virtual DOM & Fiber Reconciliation, Immutability.
-- **Hooks Mastery**:
-  - \`useState\`, \`useEffect\` (with cleanup & \`AbortController\`)
-  - \`useMemo\`, \`useCallback\` (performance optimization)
-  - \`useContext\`, Custom reusable Hooks.
-- **Component Patterns**: Slots, Render Props, Compound Components, Responsive UI with Tailwind CSS.
+- **Hooks Mastery**: \`useState\`, \`useEffect\` (with cleanup & \`AbortController\`), \`useMemo\`, \`useCallback\`, \`useContext\`.
+- **Component Patterns**: Compound Components, Slots, Responsive UI with Tailwind CSS.
 
 ---
 
-#### 📌 Phase 4: State Management, APIs & Next.js (Weeks 10–12)
-- **Data Fetching**: React Query / TanStack Query, Axios interceptors, Caching & Invalidation.
-- **Backend with Node.js**: Express REST APIs, Prisma ORM, PostgreSQL connection pools.
-- **Full-Stack Architecture**: Next.js App Router, Server Components (RSC), SSR, SSG.
-
----
-
-### 💻 Resilient React Hook with AbortController Example:
+### 💻 Resilient React Hook with AbortController:
 \`\`\`tsx
 import { useState, useEffect } from 'react';
 
 export function useFetchData<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
-    setIsLoading(true);
-
     fetch(url, { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error(\`HTTP error: \${res.status}\`);
-        return res.json();
-      })
-      .then(result => {
-        setData(result);
-        setError(null);
-      })
+      .then(res => res.json())
+      .then(result => setData(result))
       .catch(err => {
         if (err.name !== 'AbortError') setError(err.message);
       })
       .finally(() => setIsLoading(false));
 
-    return () => controller.abort(); // Cancel request on unmount
+    return () => controller.abort();
   }, [url]);
 
   return { data, isLoading, error };
 }
-\`\`\`
-
-Would you like to build a custom **React Hook** or explore **Next.js App Router** next?`;
+\`\`\``;
   }
 
-  // 5. Data Structures & Algorithms (DSA / LeetCode / Coding Interviews)
+  // 5. Data Structures & Algorithms (DSA / LeetCode)
   if (
     query.includes('dsa') ||
     query.includes('data structure') ||
     query.includes('algorithm') ||
     query.includes('leetcode') ||
-    query.includes('interview') ||
     query.includes('sorting') ||
     query.includes('tree') ||
-    query.includes('graph') ||
-    query.includes('dynamic programming') ||
-    query.includes('dp')
+    query.includes('graph')
   ) {
     return `### 🏆 Step-by-Step Study Flow for Data Structures & Algorithms (DSA)
 
-Here is a structured mastery path to excel in technical coding interviews:
-
 ---
 
-#### 📌 Level 1: Complexity & Linear Structures (Weeks 1–3)
-- **Asymptotic Analysis**: Big-O notation, Time vs Space Tradeoffs.
-- **Arrays & Strings**: Two Pointers, Sliding Window technique, Prefix Sums.
-- **Linked Lists**: Fast & Slow Pointers (Cycle Detection), List Inversion.
+#### 📌 Level 1: Linear Structures (Weeks 1–3)
+- **Arrays & Strings**: Two Pointers, Sliding Window, Prefix Sums.
+- **Linked Lists**: Fast & Slow Pointers (Cycle Detection), Inversion.
 - **Stacks & Queues**: Monotonic Stack, Queue using Stacks.
 
 ---
 
-#### 📌 Level 2: Trees, Heaps & Recursion (Weeks 4–7)
-- **Binary Trees**: BFS (Level-Order Traversal), DFS (Pre/In/Post-Order), Lowest Common Ancestor (LCA).
-- **Binary Search Trees (BST)**: Validation, Search, Insertion, Deletion.
+#### 📌 Level 2: Trees & Heaps (Weeks 4–7)
+- **Binary Trees**: BFS Level-Order, DFS (Pre/In/Post-Order), Lowest Common Ancestor.
 - **Heaps / Priority Queues**: Top-K elements, Median from Data Stream.
-- **Backtracking**: Subsets, Permutations, N-Queens.
 
 ---
 
-#### 📌 Level 3: Graphs & Search Algorithms (Weeks 8–10)
-- **Representations**: Adjacency List, Adjacency Matrix.
-- **Traversals**: Breadth-First Search (Shortest Path in unweighted graph), Depth-First Search.
-- **Advanced Graph Algorithms**:
-  - **Dijkstra's Algorithm**: Shortest path in weighted graphs.
-  - **Topological Sort**: Course schedule / Dependency resolution (Kahn's Algorithm).
-  - **Disjoint Set Union (DSU / Union-Find)**: Connected components.
+#### 📌 Level 3: Graphs & Dynamic Programming (Weeks 8–12)
+- **Graphs**: BFS/DFS, Dijkstra's algorithm, Topological Sort.
+- **Dynamic Programming**: 1D DP, 2D Grid DP, 0/1 Knapsack, Longest Common Subsequence.
 
 ---
 
-#### 📌 Level 4: Dynamic Programming (DP) (Weeks 11–13)
-- **Patterns**:
-  - 1D DP: Fibonacci, House Robber, Coin Change.
-  - 2D DP / Grid DP: Unique Paths, Minimum Path Sum.
-  - Knapsack Problems: 0/1 Knapsack, Unbounded Knapsack.
-  - String DP: Longest Common Subsequence (LCS), Edit Distance.
-
----
-
-### 💻 Fast & Slow Pointers Example (Linked List Cycle Detection):
+### 💻 Fast & Slow Pointers Example (Cycle Detection):
 \`\`\`typescript
-class ListNode {
-  val: number;
-  next: ListNode | null = null;
-  constructor(val: number) { this.val = val; }
-}
-
 function hasCycle(head: ListNode | null): boolean {
   let slow = head;
   let fast = head;
@@ -492,107 +426,84 @@ function hasCycle(head: ListNode | null): boolean {
   while (fast !== null && fast.next !== null) {
     slow = slow!.next;
     fast = fast.next.next;
-
-    if (slow === fast) return true; // Cycle detected
+    if (slow === fast) return true;
+  }
+  return false;
+}
+\`\`\``;
   }
 
-  return false;
+  // 6. SQL & Databases
+  if (query.includes('sql') || query.includes('database') || query.includes('postgres') || query.includes('mongo')) {
+    return `### 🗄️ Database Engineering & SQL Study Flow
+
+---
+
+#### 📌 Phase 1: Relational Modeling & Core SQL
+- **DDL & DML**: Tables, Primary Keys, Foreign Keys, Constraints.
+- **Advanced Queries**: Subqueries, CTEs (\`WITH\`), Window Functions (\`ROW_NUMBER()\`, \`RANK()\`, \`OVER(PARTITION BY)\`).
+- **Joins**: INNER, LEFT, RIGHT, FULL OUTER, CROSS joins.
+
+---
+
+#### 📌 Phase 2: Indexing & Query Optimization
+- **Index Types**: B-Tree, Hash, GIN/GiST for JSON/Full-text.
+- **Execution Plans**: \`EXPLAIN ANALYZE\`, identifying Sequential Scans vs Index Scans.
+
+---
+
+### 💻 SQL Window Function Example:
+\`\`\`sql
+-- Find top 3 highest scores per course category
+WITH RankedScores AS (
+  SELECT 
+    user_id,
+    course_category,
+    score,
+    DENSE_RANK() OVER (PARTITION BY course_category ORDER BY score DESC) as rank
+  FROM assessment_submissions
+)
+SELECT * FROM RankedScores WHERE rank <= 3;
+\`\`\``;
+  }
+
+  // 7. General Fallback with Comprehensive Engineering Guidance
+  return `### 💡 Technical Engineering Solution & Next Steps
+
+Here is a structured engineering approach to your request:
+
+---
+
+#### 1. 🏗️ Architecture & Requirements
+- **Separation of Concerns**: Isolate data models, business logic controllers, and presentation layers.
+- **Type Safety & Contracts**: Define clear interface schemas and validation boundaries before writing implementations.
+
+#### 2. 🛡️ Defensive Best Practices
+- Implement exhaustive error handling (\`try/catch\` blocks, HTTP status validation, circuit breakers).
+- Minimize memory leaks through proper resource cleanup (closing DB pools, aborting stale network requests).
+
+#### 3. 💻 Actionable Implementation Blueprint
+\`\`\`typescript
+// Clean, modular execution template
+export async function executeEngineeringTask<T>(input: T): Promise<{ success: boolean; data: T }> {
+  try {
+    // 1. Validate input
+    if (!input) throw new Error("Invalid payload provided");
+    
+    // 2. Perform core business logic
+    console.log("Processing task payload:", input);
+    
+    return { success: true, data: input };
+  } catch (error: any) {
+    console.error("Execution failed:", error.message);
+    throw error;
+  }
 }
 \`\`\`
 
-Would you like to practice a **Sliding Window** or **Dynamic Programming** problem today?`;
-  }
-
-  // 6. Docker / Kubernetes / DevOps / Cloud / System Design
-  if (
-    query.includes('docker') ||
-    query.includes('kubernetes') ||
-    query.includes('k8s') ||
-    query.includes('devops') ||
-    query.includes('system design') ||
-    query.includes('microservices') ||
-    query.includes('cloud') ||
-    query.includes('aws')
-  ) {
-    return `### ☁️ Study Flow for DevOps, Cloud & System Design
-
-Here is the engineering roadmap for building scalable, cloud-native infrastructure:
-
 ---
 
-#### 📌 Phase 1: Linux & Containerization (Weeks 1–3)
-- **Linux Fundamentals**: File permissions, Process signals, Systemd, Bash scripting, Networking (DNS, TCP/UDP, Ports).
-- **Docker**:
-  - Dockerfile best practices: Multi-stage builds, Alpine bases, Layer caching.
-  - Docker Compose: Multi-container local networks (App + Postgres + Redis).
-
----
-
-#### 📌 Phase 2: Orchestration with Kubernetes (Weeks 4–7)
-- **Core Primitives**: Pods, Deployments, Services (ClusterIP, NodePort, LoadBalancer).
-- **Configuration & Storage**: ConfigMaps, Secrets, PersistentVolumes (PV), PersistentVolumeClaims (PVC).
-- **Ingress & Networking**: Nginx Ingress Controller, TLS cert-manager.
-
----
-
-#### 📌 Phase 3: CI/CD & Infrastructure as Code (Weeks 8–10)
-- **CI/CD Pipelines**: Automated test execution, Docker image building, GitHub Actions workflows.
-- **Terraform (IaC)**: Declarative cloud provisioning (VPC, EC2, RDS, S3).
-- **Monitoring & Observability**: Prometheus metrics, Grafana dashboards, structured logging.
-
----
-
-#### 📌 Phase 4: Scalable System Design Concepts
-- **Scalability**: Horizontal vs Vertical Scaling, Load Balancers (Round-Robin, Least Connections).
-- **Caching Strategies**: Redis Cache-Aside, Write-Through, TTL strategies, CDN edge caching.
-- **Database Scaling**: Read Replicas, Sharding, CAP Theorem.
-
----
-
-### 💻 Production Multi-Stage Dockerfile Example:
-\`\`\`dockerfile
-# Build Stage
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci
-COPY . .
-RUN npm run build
-
-# Production Runtime Stage
-FROM node:20-alpine AS runner
-WORKDIR /app
-ENV NODE_ENV=production
-COPY --from=builder /app/dist ./dist
-COPY --from=builder /app/package*.json ./
-RUN npm ci --only=production --ignore-scripts
-USER node
-EXPOSE 3000
-CMD ["node", "dist/server/index.js"]
-\`\`\`
-
-Would you like to discuss **Kubernetes Deployment Manifests** or a **System Design Scenario**?`;
-  }
-
-  // 7. General Technical Mentor Response
-  return `### 💡 Engineering Analysis & Action Plan
-
-Let's address your question systematically:
-
-1. **Core Concept**:
-   - Break down the architecture into isolated, testable modules.
-   - Maintain clear separation between data storage, business logic, and presentation layers.
-
-2. **Best Practices & Pitfalls**:
-   - Always implement defensive error handling with proper try/catch boundaries and fallbacks.
-   - Profile memory allocations, asynchronous lifecycles, and network overhead.
-
-3. **Step-by-Step Implementation**:
-   - Start by outlining your data structures and interfaces.
-   - Implement the core logic with pure functions before connecting UI or network layers.
-   - Add automated test assertions to verify edge cases.
-
-Feel free to ask for specific code snippets, study roadmaps, or paste your code for an interactive review!`;
+👉 **How can I tailor this further?** Feel free to ask for a specific language study roadmap (e.g. *C++, Python, React, Java, DSA*) or paste code to debug!`;
 }
 
 export const aiService = {
@@ -727,14 +638,15 @@ export const aiService = {
       let aiResponseText = '';
       const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
 
-      if (apiKey && apiKey.length > 10) {
+      // Check if user provided a valid Gemini API key starting with AIzaSy
+      if (apiKey && apiKey.startsWith('AIzaSy')) {
         try {
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
           const res = await fetch(geminiUrl, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-              contents: [{ parts: [{ text: `You are LearnPath AI Mentor, an expert programming coach. Help the student with: ${data.message}` }] }],
+              contents: [{ parts: [{ text: `You are LearnPath AI Mentor, an expert engineering coach. Answer clearly with markdown, roadmaps, and code: ${data.message}` }] }],
             }),
           });
           if (res.ok) {
@@ -742,7 +654,7 @@ export const aiService = {
             aiResponseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
           }
         } catch (e) {
-          console.warn('Gemini direct API call error, falling back to local NLP engine:', e);
+          console.warn('Gemini direct API error, using built-in NLP engine:', e);
         }
       }
 
