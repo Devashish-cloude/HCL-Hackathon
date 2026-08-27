@@ -18,6 +18,7 @@ import {
   Terminal,
   Sparkles,
   Check,
+  Zap,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -42,7 +43,7 @@ export const CourseDetailPage: React.FC = () => {
         if (res.success && res.data) {
           setCourse(res.data);
           
-          // Populate completed lessons from persistent storage
+          // Populate completed lessons ONLY from actual persistent storage for this specific course slug
           const stored = userProgressStore.getProgress(user?.id);
           const initialCompleted: { [key: string]: boolean } = {};
           
@@ -54,11 +55,6 @@ export const CourseDetailPage: React.FC = () => {
               }
             });
           });
-
-          // Always have at least 0-0 completed if devashish
-          if (user?.email?.includes('devashish')) {
-            initialCompleted['0-0'] = true;
-          }
 
           setCompletedLessons(initialCompleted);
 
@@ -134,6 +130,16 @@ export const CourseDetailPage: React.FC = () => {
     }
   };
 
+  const handlePreviousLesson = () => {
+    if (activeLessonIndex > 0) {
+      setActiveLessonIndex(activeLessonIndex - 1);
+    } else if (activeModuleIndex > 0 && course.modules) {
+      const prevMod = course.modules[activeModuleIndex - 1];
+      setActiveModuleIndex(activeModuleIndex - 1);
+      setActiveLessonIndex((prevMod.lessons?.length || 1) - 1);
+    }
+  };
+
   const handleRunCode = () => {
     setIsRunningCode(true);
     setTimeout(() => {
@@ -163,7 +169,7 @@ export const CourseDetailPage: React.FC = () => {
       {/* Header Breadcrumb */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate('/explore')}
+          onClick={() => navigate('/dashboard')}
           className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -265,11 +271,17 @@ export const CourseDetailPage: React.FC = () => {
               </div>
             ) : null}
 
-            {/* Footer Action Buttons */}
+            {/* Footer Navigation Buttons */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <span className="text-xs text-slate-400 dark:text-slate-500">
-                Duration: ~{currentLesson?.durationMinutes} min
-              </span>
+              <Button
+                variant="outline"
+                size="md"
+                onClick={handlePreviousLesson}
+                disabled={activeModuleIndex === 0 && activeLessonIndex === 0}
+                className="font-medium text-xs cursor-pointer"
+              >
+                Previous Lesson
+              </Button>
 
               <Button
                 variant="primary"
@@ -278,7 +290,7 @@ export const CourseDetailPage: React.FC = () => {
                 className="font-semibold text-xs cursor-pointer"
                 leftIcon={<Check className="w-4 h-4" />}
               >
-                Mark Lesson Complete
+                Mark Complete & Next
               </Button>
             </div>
           </Card>
@@ -288,18 +300,18 @@ export const CourseDetailPage: React.FC = () => {
         <div className="space-y-4">
           <Card className="p-5 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                Course Progress
-              </span>
-              <div className="flex items-center justify-between mt-1">
-                <span className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
-                  {progressPercent}%
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                  Course Syllabus
                 </span>
-                <span className="text-xs font-semibold text-slate-500">
-                  {completedCount} of {totalLessonsCount} lessons
+                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+                  {progressPercent}%
                 </span>
               </div>
               <ProgressBar value={progressPercent} size="sm" className="mt-2" />
+              <p className="text-[11px] text-slate-400 mt-1.5">
+                {completedCount} of {totalLessonsCount} lessons completed
+              </p>
             </div>
 
             <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-4">
