@@ -109,6 +109,7 @@ export const AIMentorPage: React.FC = () => {
       const res = await aiService.sendMessage({
         conversationId: activeConvId || undefined,
         message: userText,
+        history: messages,
       });
 
       if (res.success) {

@@ -64,63 +64,205 @@ function createNewUserConversations(user: User): Conversation[] {
   ];
 }
 
-export function generateIntelligentAIResponse(message: string): string {
+export function generateContextualAIResponse(
+  message: string,
+  history: ChatMessage[] = [],
+  userRole?: string
+): string {
   const query = message.trim().toLowerCase();
 
-  // 1. C++ / C / CPP / C+
-  if (
-    query.includes('c++') ||
-    query.includes('c+') ||
-    query.includes('cpp') ||
-    query.includes(' c ') ||
-    query.startsWith('c ') ||
-    query.endsWith(' c') ||
-    query.includes('pointer') ||
-    query.includes('memory') ||
-    query.includes('stl')
-  ) {
-    return `### 🚀 Comprehensive Study Flow for C++ (Zero to Advanced)
+  // Extract combined context from recent conversation history
+  const recentHistoryText = history
+    .slice(-4)
+    .map((m) => m.content.toLowerCase())
+    .join(' ');
+  const combinedContext = `${query} ${recentHistoryText} ${(userRole || '').toLowerCase()}`;
 
-Here is a structured, production-tested roadmap to master **C++** from foundational systems mechanics to modern C++20 standards:
+  // Detect active subject domain
+  const isCpp =
+    combinedContext.includes('c++') ||
+    combinedContext.includes('c+') ||
+    combinedContext.includes('cpp') ||
+    query.includes('pointer') ||
+    query.includes('stl') ||
+    query.includes('memory management') ||
+    query.includes('raii') ||
+    (query.includes(' c ') && !query.includes('css'));
+
+  const isPythonAI =
+    !isCpp &&
+    (combinedContext.includes('python') ||
+      combinedContext.includes('pytorch') ||
+      combinedContext.includes('machine learning') ||
+      combinedContext.includes('ai') ||
+      combinedContext.includes('deep learning') ||
+      combinedContext.includes('rag') ||
+      combinedContext.includes('llm') ||
+      combinedContext.includes('tensor'));
+
+  const isJava =
+    !isCpp &&
+    !isPythonAI &&
+    (combinedContext.includes('java') ||
+      combinedContext.includes('spring') ||
+      combinedContext.includes('jvm') ||
+      combinedContext.includes('hibernate'));
+
+  const isReactFrontend =
+    !isCpp &&
+    !isPythonAI &&
+    !isJava &&
+    (combinedContext.includes('react') ||
+      combinedContext.includes('javascript') ||
+      combinedContext.includes('typescript') ||
+      combinedContext.includes('frontend') ||
+      combinedContext.includes('flexbox') ||
+      combinedContext.includes('css') ||
+      combinedContext.includes('node') ||
+      combinedContext.includes('html'));
+
+  const isDSA =
+    combinedContext.includes('dsa') ||
+    combinedContext.includes('algorithm') ||
+    combinedContext.includes('leetcode') ||
+    combinedContext.includes('sorting') ||
+    combinedContext.includes('binary tree') ||
+    combinedContext.includes('graph') ||
+    combinedContext.includes('dynamic programming');
+
+  // ----------------------------------------------------
+  // 1. C++ DOMAIN RESPONSES
+  // ----------------------------------------------------
+  if (isCpp) {
+    // Specific follow-up on Pointers
+    if (query.includes('pointer') || query.includes('memory') || query.includes('malloc') || query.includes('address')) {
+      return `### 💡 Deep Dive: Pointers & Memory Management in C++
+
+In C++, memory is divided into two primary regions:
+1. **Stack Memory**: Fast, automatically managed, fixed-size frames (LIFO).
+2. **Heap Memory**: Dynamic runtime allocations managed manually or via Smart Pointers.
+
+---
+
+#### 📌 1. Raw Pointers & Address Operator
+\`\`\`cpp
+#include <iostream>
+
+int main() {
+    int value = 42;
+    int* ptr = &value; // ptr stores memory address of 'value'
+
+    std::cout << "Value: " << value << "\\n";         // 42
+    std::cout << "Address: " << ptr << "\\n";         // e.g. 0x7ffee34
+    std::cout << "Dereferenced: " << *ptr << "\\n";   // 42
+
+    *ptr = 100; // Modifies 'value' directly in memory
+    std::cout << "Updated Value: " << value << "\\n"; // 100
+    return 0;
+}
+\`\`\`
+
+---
+
+#### 📌 2. Modern Smart Pointers (C++11+)
+Never use raw \`new\` and \`delete\` in modern C++. Always use **Smart Pointers** to prevent memory leaks:
+
+- **\`std::unique_ptr<T>\`**: Exclusive ownership. Automatically frees memory when going out of scope.
+\`\`\`cpp
+#include <memory>
+
+struct Node { int data; };
+
+void process() {
+    auto node = std::make_unique<Node>();
+    node->data = 50;
+} // 'node' is automatically deallocated here! No memory leak.
+\`\`\`
+
+Would you like to practice a coding problem on **Dynamic Array Resizing** or move to **Object-Oriented C++ (RAII & Virtual Tables)**?`;
+    }
+
+    // Specific follow-up on STL / Containers
+    if (query.includes('stl') || query.includes('vector') || query.includes('map') || query.includes('queue')) {
+      return `### 🧰 Standard Template Library (STL) in Modern C++
+
+The STL is organized into **Containers**, **Algorithms**, and **Iterators**:
+
+---
+
+#### 📌 1. Essential Containers
+| Container | Underlying Structure | Time Complexity (Access/Search) |
+| :--- | :--- | :--- |
+| \`std::vector<T>\` | Dynamic Contiguous Array | $O(1)$ random access, amortized $O(1)$ append |
+| \`std::unordered_map<K, V>\` | Hash Table | Average $O(1)$ lookup / insert |
+| \`std::map<K, V>\` | Red-Black Tree (Balanced BST) | $O(\\log n)$ ordered traversal |
+| \`std::priority_queue<T>\` | Binary Heap | $O(1)$ top element, $O(\\log n)$ push/pop |
+
+---
+
+#### 📌 2. STL Code Example
+\`\`\`cpp
+#include <iostream>
+#include <vector>
+#include <unordered_map>
+#include <algorithm>
+
+int main() {
+    // Vector with transform and sort
+    std::vector<int> scores = {85, 92, 78, 95, 88};
+    std::sort(scores.begin(), scores.end(), std::greater<int>());
+
+    // Hash Map for frequency counting
+    std::unordered_map<std::string, int> wordCount;
+    wordCount["cpp"] = 10;
+    wordCount["pointers"] = 5;
+
+    std::cout << "Top Score: " << scores[0] << "\\n";
+    std::cout << "C++ frequency: " << wordCount["cpp"] << "\\n";
+    return 0;
+}
+\`\`\`
+
+Would you like to see how to implement custom comparators or solve a **Two-Sum** problem in C++?`;
+    }
+
+    // General C++ Roadmap / Flow
+    return `### 🚀 C++ Engineering Roadmap (Zero to Advanced)
+
+Here is your step-by-step master roadmap for **Modern C++ Systems Programming**:
 
 ---
 
 #### 📌 Phase 1: Core Syntax & Memory Foundations (Weeks 1–3)
-- **Basic Primitives**: Variables, Control Flow, Functions, Pass-by-value vs Pass-by-reference (\`int&\`).
-- **Memory Model**: Stack allocation vs Heap allocation.
-- **Pointers & References**: Pointer arithmetic, dereferencing (\`*\`), address-of (\`&\`), \`nullptr\`, dangling pointers.
-- **Manual Memory Management**: \`malloc\` / \`free\` vs \`new\` / \`delete\`.
+- **Language Primitives**: Types, Control flow, Pass-by-value vs Pass-by-reference (\`int&\`).
+- **Memory Architecture**: Stack frames, Heap allocation, Pointer arithmetic, \`nullptr\`, Dereferencing (\`*\`).
+- **Manual Management**: \`malloc\` / \`free\` vs \`new\` / \`delete\`.
 
 ---
 
-#### 📌 Phase 2: Object-Oriented Programming & RAII (Weeks 4–6)
-- **Classes & Encapsulation**: Constructors, Destructors, Copy Constructors, Deep vs Shallow copy.
-- **RAII (Resource Acquisition Is Initialization)**: Automatic resource management ensuring zero memory leaks.
-- **Operator Overloading**: Implementing custom behavior for \`+\`, \`==\`, \`<<\`, \`>>\`.
-- **Inheritance & Polymorphism**: \`virtual\` functions, Abstract classes, Pure virtual functions, Virtual Method Table (\`vtable\` / \`vptr\`).
+#### 📌 Phase 2: Object-Oriented Design & RAII (Weeks 4–6)
+- **Classes & Encapsulation**: Constructors, Destructors, Copy/Move constructors, Deep copy.
+- **RAII (Resource Acquisition Is Initialization)**: Automatic lifetime management.
+- **Polymorphism**: \`virtual\` functions, Abstract classes, Virtual table (\`vtable\` / \`vptr\`).
 
 ---
 
-#### 📌 Phase 3: Modern C++ (C++11 to C++20) (Weeks 7–9)
-- **Smart Pointers**:
-  - \`std::unique_ptr<T>\`: Exclusive ownership (lightweight, zero-cost abstraction).
-  - \`std::shared_ptr<T>\`: Reference-counted shared ownership.
-  - \`std::weak_ptr<T>\`: Breaking circular references.
-- **Move Semantics & Rvalue References (\`T&&\`)**: \`std::move\`, move constructors, avoiding expensive deep copies.
-- **Modern Idioms**: \`auto\`, \`nullptr\`, \`constexpr\`, Lambda expressions, \`std::optional\`, \`std::variant\`.
+#### 📌 Phase 3: Modern C++ Standards (C++11 to C++20) (Weeks 7–9)
+- **Smart Pointers**: \`std::unique_ptr\`, \`std::shared_ptr\`, \`std::weak_ptr\`.
+- **Move Semantics**: Rvalue references (\`T&&\`), \`std::move\`, preventing deep copy overhead.
+- **Modern Idioms**: \`auto\`, \`constexpr\`, Lambda expressions, \`std::optional\`.
 
 ---
 
-#### 📌 Phase 4: Standard Template Library (STL) & Data Structures (Weeks 10–12)
-- **Containers**: \`std::vector\`, \`std::deque\`, \`std::list\`, \`std::unordered_map\` (Hash Table), \`std::map\` (Red-Black Tree), \`std::priority_queue\`.
-- **Algorithms**: \`<algorithm>\` functions (\`std::sort\`, \`std::find_if\`, \`std::transform\`, \`std::binary_search\`).
-- **Iterators**: Random access, forward, and reverse iterators.
+#### 📌 Phase 4: Standard Template Library & DSA (Weeks 10–12)
+- **Containers**: \`std::vector\`, \`std::unordered_map\`, \`std::priority_queue\`.
+- **Algorithms**: \`<algorithm>\` (\`std::sort\`, \`std::binary_search\`, \`std::transform\`).
 
 ---
 
-#### 📌 Phase 5: High-Performance Systems & Concurrency (Weeks 13+)
-- **Multithreading**: \`std::thread\`, \`std::mutex\`, \`std::lock_guard\`, \`std::atomic\`, Condition variables.
-- **Performance Profiling**: Valgrind (memory leak detection), GDB debugging, Cache locality optimization.
+#### 📌 Phase 5: High-Performance Concurrency & Systems (Weeks 13+)
+- **Multithreading**: \`std::thread\`, \`std::mutex\`, \`std::lock_guard\`, \`std::atomic\`.
+- **Profiling**: Valgrind memory leak checking, GDB debugging, Cache locality tuning.
 
 ---
 
@@ -131,281 +273,210 @@ Here is a structured, production-tested roadmap to master **C++** from foundatio
 #include <vector>
 #include <algorithm>
 
-class Task {
+class Engine {
 public:
     std::string name;
-    Task(std::string taskName) : name(std::move(taskName)) {
-        std::cout << "[Allocated] Task: " << name << "\\n";
-    }
-    ~Task() {
-        std::cout << "[Deallocated] Task: " << name << "\\n";
-    }
-    void execute() const {
-        std::cout << "Executing: " << name << "\\n";
-    }
+    Engine(std::string n) : name(std::move(n)) { std::cout << "Allocated: " << name << "\\n"; }
+    ~Engine() { std::cout << "Cleaned up: " << name << "\\n"; }
+    void run() const { std::cout << "Running: " << name << "\\n"; }
 };
 
 int main() {
-    // Unique pointer automatically cleans up when leaving scope
-    auto taskPtr = std::make_unique<Task>("Compile C++ Engine");
-    taskPtr->execute();
+    auto enginePtr = std::make_unique<Engine>("C++ Physics Kernel");
+    enginePtr->run();
 
-    // STL Vector with lambda
-    std::vector<int> numbers = {5, 2, 8, 1, 9};
-    std::sort(numbers.begin(), numbers.end(), [](int a, int b) {
-        return a < b;
-    });
+    std::vector<int> nums = {4, 1, 9, 2};
+    std::sort(nums.begin(), nums.end());
 
     std::cout << "Sorted: ";
-    for (int n : numbers) std::cout << n << " ";
+    for (int n : nums) std::cout << n << " ";
     std::cout << "\\n";
 
-    return 0; // taskPtr memory is automatically freed here!
+    return 0; // enginePtr automatically deallocated!
 }
 \`\`\`
 
-Would you like to start with **Pointers and Memory Management** exercises, or dive into **STL Data Structures** first?`;
+👉 **Next Step**: Would you like to practice **Pointers & Memory Exercises**, or dive into **STL Data Structures**?`;
   }
 
-  // 2. Python / Machine Learning / AI / Data Science
-  if (
-    query.includes('python') ||
-    query.includes('ml') ||
-    query.includes('machine learning') ||
-    query.includes('ai') ||
-    query.includes('deep learning') ||
-    query.includes('pytorch') ||
-    query.includes('tensorflow') ||
-    query.includes('rag') ||
-    query.includes('llm')
-  ) {
-    return `### 🧠 Complete Study Flow for AI & Machine Learning with Python
+  // ----------------------------------------------------
+  // 2. PYTHON & AI / ML DOMAIN RESPONSES
+  // ----------------------------------------------------
+  if (isPythonAI) {
+    return `### 🧠 AI, Machine Learning & PyTorch Roadmap
 
-Here is the industry-standard curriculum for mastering **Artificial Intelligence, PyTorch & LLM Systems**:
+Here is your structured curriculum for mastering **Artificial Intelligence, Neural Networks & Large Language Models**:
 
 ---
 
-#### 📌 Phase 1: Python & Math Foundations (Weeks 1–4)
-- **Advanced Python**: List comprehensions, Generators, Decorators, \`asyncio\`, Object-Oriented Python.
-- **Linear Algebra**: Vectors, Matrices, Eigenvalues, Dot products, Tensor broadcasting.
-- **Calculus & Probability**: Derivatives, Partial gradients, Chain rule, Bayes' theorem, Normal distributions.
-- **Scientific Libraries**: **NumPy** (vectorization), **Pandas** (data wrangling), **Matplotlib/Seaborn**.
+#### 📌 Phase 1: Python, Math & Data Engineering (Weeks 1–4)
+- **Advanced Python**: Comprehensions, Generators, Decorators, OOP.
+- **Mathematics**: Linear Algebra (Vectors, Matrix multiplication, Eigenvalues), Multivariate Calculus (Gradients, Chain rule), Probability.
+- **Data Stack**: **NumPy** (vectorization), **Pandas** (ETL), **Matplotlib/Seaborn**.
 
 ---
 
 #### 📌 Phase 2: Classical Machine Learning with Scikit-Learn (Weeks 5–8)
-- **Supervised Learning**: Linear/Logistic Regression, Decision Trees, Random Forests, XGBoost / LightGBM.
-- **Unsupervised Learning**: K-Means Clustering, PCA (Dimensionality Reduction).
-- **Model Evaluation**: Precision, Recall, F1-Score, ROC-AUC, K-Fold Cross-Validation, Bias-Variance Tradeoff.
+- **Supervised Learning**: Linear/Logistic Regression, Decision Trees, Random Forests, XGBoost.
+- **Unsupervised Learning**: K-Means, PCA (Dimensionality Reduction).
+- **Validation**: Precision/Recall, ROC-AUC, K-Fold Cross-Validation.
 
 ---
 
 #### 📌 Phase 3: Deep Learning & PyTorch (Weeks 9–13)
-- **Neural Network Primitives**: Perceptrons, Multi-Layer Perceptrons (MLP), Activation Functions (ReLU, GELU, Softmax).
-- **Autograd & Optimizers**: Forward passes, Loss functions (Cross-Entropy, MSE), Backpropagation, Adam/SGD.
-- **Architectures**:
-  - **CNNs**: Image classification, Convolution kernels, Pooling.
-  - **RNNs / LSTMs**: Sequential data and time-series.
-  - **Transformers**: Self-Attention, Multi-Head Attention, Positional Encoding.
+- **Neural Foundations**: Perceptrons, MLP, Activation Functions (GELU, ReLU, Softmax).
+- **Autograd & Optimizers**: Forward pass, Cross-Entropy Loss, Backpropagation, AdamW/SGD.
+- **Architectures**: CNNs (Vision), RNNs/LSTMs (Time-Series), Transformers (Multi-Head Self-Attention).
 
 ---
 
 #### 📌 Phase 4: Generative AI, RAG & LLMs (Weeks 14+)
 - **LLM Fine-Tuning**: LoRA, QLoRA, Hugging Face Transformers.
-- **RAG (Retrieval-Augmented Generation)**: Vector Embeddings, Cosine Similarity, Vector DBs (Chroma, Pinecone), LangChain / LlamaIndex.
-- **Deployment**: ONNX, TensorRT, vLLM, Docker GPU containers.
+- **RAG Systems**: Vector Embeddings, Cosine Similarity, Vector DBs (Chroma, Pinecone), LangChain.
 
 ---
 
-### 💻 PyTorch Multi-Layer Perceptron Example:
+### 💻 PyTorch MLP Neural Network Example:
 \`\`\`python
 import torch
 import torch.nn as nn
 
-class NeuralClassifier(nn.Module):
-    def __init__(self, input_dim=10, hidden_dim=64, num_classes=2):
+class Classifier(nn.Module):
+    def __init__(self, in_features=10, hidden=64, classes=2):
         super().__init__()
         self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
+            nn.Linear(in_features, hidden),
             nn.GELU(),
             nn.Dropout(0.1),
-            nn.Linear(hidden_dim, num_classes)
+            nn.Linear(hidden, classes)
         )
 
     def forward(self, x):
         return self.net(x)
 
-model = NeuralClassifier()
-print("Initialized PyTorch Model:\\n", model)
+model = Classifier()
+print("PyTorch Model Initialized:\\n", model)
 \`\`\`
 
-Would you like to explore **Neural Network Mathematics** or **Building a RAG Pipeline** next?`;
+👉 **Next Step**: Would you like to practice **Tensor Operations** or build a **RAG Pipeline**?`;
   }
 
-  // 3. Java / Spring Boot
-  if (
-    query.includes('java') ||
-    query.includes('spring') ||
-    query.includes('jvm') ||
-    query.includes('hibernate')
-  ) {
-    return `### ☕ Complete Study Flow for Java & Enterprise Backend
-
-Here is the roadmap for mastering **Java, JVM Architecture, and Spring Boot Microservices**:
+  // ----------------------------------------------------
+  // 3. JAVA & BACKEND DOMAIN RESPONSES
+  // ----------------------------------------------------
+  if (isJava) {
+    return `### ☕ Java & Enterprise Spring Boot Roadmap
 
 ---
 
-#### 📌 Phase 1: Core Java & JVM Internals (Weeks 1–4)
-- **Core OOP**: Classes, Polymorphism, Inheritance, Encapsulation, Abstract classes & Interfaces.
-- **Memory Model**: Heap vs Stack memory, Garbage Collection (G1GC, ZGC), Bytecode compilation.
-- **Java Collections Framework**: \`ArrayList\`, \`LinkedList\`, \`HashMap\` (Hashing mechanics & collisions), \`TreeSet\`.
-- **Modern Java (Java 17–21)**: Records, Pattern Matching, Sealed Classes, Virtual Threads (Project Loom).
+#### 📌 Phase 1: Core Java & JVM Architecture (Weeks 1–4)
+- **OOP & Memory**: Heap vs Stack, Garbage Collection (G1GC), Interfaces vs Abstract Classes.
+- **Collections**: \`ArrayList\`, \`LinkedList\`, \`HashMap\` (Hashing mechanics & collisions).
 
 ---
 
-#### 📌 Phase 2: Multithreading & Concurrency (Weeks 5–7)
-- **Thread Mechanics**: \`Thread\`, \`Runnable\`, \`Callable\`, \`Future\`.
+#### 📌 Phase 2: Concurrency & Multithreading (Weeks 5–7)
 - **Thread Safety**: \`synchronized\`, \`volatile\`, \`AtomicInteger\`, \`ReentrantLock\`.
-- **Concurrency Utilities**: \`ExecutorService\`, \`ThreadPoolExecutor\`, \`CompletableFuture\` async pipelines.
+- **Async Pipelines**: \`ExecutorService\`, \`CompletableFuture\`, Virtual Threads (Java 21).
 
 ---
 
-#### 📌 Phase 3: Spring Boot & REST APIs (Weeks 8–11)
-- **Core Spring**: Inversion of Control (IoC), Dependency Injection (\`@Autowired\`, \`@Component\`, \`@Bean\`).
-- **RESTful APIs**: \`@RestController\`, \`@GetMapping\`, \`@PostMapping\`, Request Validation with Jakarta Validation.
-- **Data Persistence**: **Spring Data JPA**, Hibernate ORM, Entity relationships (\`@OneToMany\`, \`@ManyToOne\`), Transactions (\`@Transactional\`).
+#### 📌 Phase 3: Spring Boot Microservices (Weeks 8–12)
+- **Spring MVC**: Inversion of Control, \`@RestController\`, \`@Autowired\`, Request validation.
+- **Spring Data JPA**: Hibernate ORM, Entity mapping (\`@OneToMany\`), \`@Transactional\`.
+- **Security & Cloud**: Spring Security 6, JWT, Docker, PostgreSQL.
 
 ---
 
 ### 💻 Spring Boot RestController Example:
 \`\`\`java
 @RestController
-@RequestMapping("/api/v1/users")
-public class UserController {
+@RequestMapping("/api/v1/students")
+public class StudentController {
+    private final StudentService studentService;
 
-    private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
+    public StudentController(StudentService studentService) {
+        this.studentService = studentService;
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable UUID id) {
-        UserResponseDTO user = userService.findUserById(id);
-        return ResponseEntity.ok(user);
+    public ResponseEntity<StudentDTO> getStudent(@PathVariable UUID id) {
+        return ResponseEntity.ok(studentService.findById(id));
     }
 }
 \`\`\`
 
-Would you like to practice **Java Multithreading** or dive into **Spring Data JPA relationships**?`;
+👉 **Next Step**: Would you like to explore **Java Multithreading** or **Spring Data JPA**?`;
   }
 
-  // 4. JavaScript / TypeScript / React / Frontend
-  if (
-    query.includes('javascript') ||
-    query.includes('typescript') ||
-    query.includes('react') ||
-    query.includes('frontend') ||
-    query.includes('node') ||
-    query.includes('css') ||
-    query.includes('flexbox') ||
-    query.includes('async') ||
-    query.includes('promise')
-  ) {
-    if (query.includes('flexbox') || query.includes('center')) {
-      return `### 🎨 Mastering CSS Flexbox & Centering
-
-Flexbox operates along two primary axes: the **Main Axis** (defined by \`flex-direction\`) and the **Cross Axis** (perpendicular to the main axis).
-
-#### Key Properties:
-- **\`justify-content\`**: Controls alignment along the **Main Axis** (defaults to horizontal row).
-  - \`center\`: Groups items in the center.
-  - \`space-between\`: Distributes items evenly with first/last at edges.
-- **\`align-items\`**: Controls alignment along the **Cross Axis** (defaults to vertical column).
-  - \`center\`: Vertically centers items.
-  - \`stretch\`: Expands items to fill cross-axis height.
-
-\`\`\`css
-.center-container {
-  display: flex;
-  justify-content: center; /* Center along Main Axis */
-  align-items: center;     /* Center along Cross Axis */
-  min-height: 100vh;
-}
-\`\`\``;
-    }
-
-    return `### ⚡ Complete Study Flow for Modern Full-Stack JavaScript & React
+  // ----------------------------------------------------
+  // 4. JAVASCRIPT / REACT / FRONTEND DOMAIN RESPONSES
+  // ----------------------------------------------------
+  if (isReactFrontend) {
+    return `### ⚡ Full-Stack JavaScript & React Roadmap
 
 ---
 
-#### 📌 Phase 1: JavaScript Runtime & Asynchronous Core (Weeks 1–3)
-- **Runtime Mechanics**: Execution Context, Call Stack (LIFO), Lexical Scope, Closures.
-- **Event Loop**: Microtask Queue (Promises, \`queueMicrotask\`) vs Macrotask Queue (\`setTimeout\`).
-- **Asynchronous Flow**: Promises, \`async/await\`, \`Promise.allSettled\`, Error bubbling with \`try/catch\`.
+#### 📌 Phase 1: JavaScript Runtime & Async Core (Weeks 1–3)
+- **Runtime Mechanics**: Execution Context, Call Stack, Closures, Event Loop (Microtasks vs Macrotasks).
+- **Asynchronous Flow**: Promises, \`async/await\`, \`Promise.allSettled\`, Error handling.
 
 ---
 
-#### 📌 Phase 2: TypeScript & Type Systems (Weeks 4–5)
-- **Type Safety**: Interfaces, Type Aliases, Generics, Discriminated Unions, Zod validation.
+#### 📌 Phase 2: TypeScript & Modern React 18 (Weeks 4–8)
+- **TypeScript**: Interfaces, Generics, Discriminated Unions, Zod validation.
+- **React 18**: Virtual DOM & Fiber reconciliation, Hooks (\`useState\`, \`useEffect\`, \`useMemo\`, \`useCallback\`, \`useContext\`), Custom Hooks.
 
 ---
 
-#### 📌 Phase 3: React 18 Architecture (Weeks 6–9)
-- **Hooks Mastery**: \`useState\`, \`useEffect\` (with cleanup & \`AbortController\`), \`useMemo\`, \`useCallback\`, \`useContext\`.
-- **Component Patterns**: Compound Components, Slots, Responsive UI with Tailwind CSS.
+#### 📌 Phase 3: Backend APIs & Full Stack (Weeks 9–12)
+- **Backend**: Express REST APIs, Prisma ORM, PostgreSQL transactions.
+- **Next.js**: Server Components (RSC), SSR, SSG, Route Handlers.
 
 ---
 
-### 💻 Resilient React Hook with AbortController:
+### 💻 React Custom Hook with AbortController Example:
 \`\`\`tsx
 import { useState, useEffect } from 'react';
 
-export function useFetchData<T>(url: string) {
+export function useFetch<T>(url: string) {
   const [data, setData] = useState<T | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const controller = new AbortController();
     fetch(url, { signal: controller.signal })
       .then(res => res.json())
       .then(result => setData(result))
-      .catch(err => {
-        if (err.name !== 'AbortError') setError(err.message);
-      })
+      .catch(err => { if (err.name !== 'AbortError') console.error(err); })
       .finally(() => setIsLoading(false));
 
     return () => controller.abort();
   }, [url]);
 
-  return { data, isLoading, error };
+  return { data, isLoading };
 }
-\`\`\``;
+\`\`\`
+
+👉 **Next Step**: Would you like to build a **Custom Hook** or explore **Next.js App Router**?`;
   }
 
-  // 5. Data Structures & Algorithms (DSA / LeetCode)
-  if (
-    query.includes('dsa') ||
-    query.includes('data structure') ||
-    query.includes('algorithm') ||
-    query.includes('leetcode') ||
-    query.includes('sorting') ||
-    query.includes('tree') ||
-    query.includes('graph')
-  ) {
-    return `### 🏆 Step-by-Step Study Flow for Data Structures & Algorithms (DSA)
+  // ----------------------------------------------------
+  // 5. DATA STRUCTURES & ALGORITHMS (DSA)
+  // ----------------------------------------------------
+  if (isDSA) {
+    return `### 🏆 Data Structures & Algorithms Mastery Roadmap
 
 ---
 
-#### 📌 Level 1: Linear Structures (Weeks 1–3)
+#### 📌 Level 1: Linear Data Structures (Weeks 1–3)
 - **Arrays & Strings**: Two Pointers, Sliding Window, Prefix Sums.
 - **Linked Lists**: Fast & Slow Pointers (Cycle Detection), Inversion.
 - **Stacks & Queues**: Monotonic Stack, Queue using Stacks.
 
 ---
 
-#### 📌 Level 2: Trees & Heaps (Weeks 4–7)
+#### 📌 Level 2: Trees, Heaps & Recursion (Weeks 4–7)
 - **Binary Trees**: BFS Level-Order, DFS (Pre/In/Post-Order), Lowest Common Ancestor.
 - **Heaps / Priority Queues**: Top-K elements, Median from Data Stream.
 
@@ -430,80 +501,43 @@ function hasCycle(head: ListNode | null): boolean {
   }
   return false;
 }
-\`\`\``;
-  }
-
-  // 6. SQL & Databases
-  if (query.includes('sql') || query.includes('database') || query.includes('postgres') || query.includes('mongo')) {
-    return `### 🗄️ Database Engineering & SQL Study Flow
-
----
-
-#### 📌 Phase 1: Relational Modeling & Core SQL
-- **DDL & DML**: Tables, Primary Keys, Foreign Keys, Constraints.
-- **Advanced Queries**: Subqueries, CTEs (\`WITH\`), Window Functions (\`ROW_NUMBER()\`, \`RANK()\`, \`OVER(PARTITION BY)\`).
-- **Joins**: INNER, LEFT, RIGHT, FULL OUTER, CROSS joins.
-
----
-
-#### 📌 Phase 2: Indexing & Query Optimization
-- **Index Types**: B-Tree, Hash, GIN/GiST for JSON/Full-text.
-- **Execution Plans**: \`EXPLAIN ANALYZE\`, identifying Sequential Scans vs Index Scans.
-
----
-
-### 💻 SQL Window Function Example:
-\`\`\`sql
--- Find top 3 highest scores per course category
-WITH RankedScores AS (
-  SELECT 
-    user_id,
-    course_category,
-    score,
-    DENSE_RANK() OVER (PARTITION BY course_category ORDER BY score DESC) as rank
-  FROM assessment_submissions
-)
-SELECT * FROM RankedScores WHERE rank <= 3;
-\`\`\``;
-  }
-
-  // 7. General Fallback with Comprehensive Engineering Guidance
-  return `### 💡 Technical Engineering Solution & Next Steps
-
-Here is a structured engineering approach to your request:
-
----
-
-#### 1. 🏗️ Architecture & Requirements
-- **Separation of Concerns**: Isolate data models, business logic controllers, and presentation layers.
-- **Type Safety & Contracts**: Define clear interface schemas and validation boundaries before writing implementations.
-
-#### 2. 🛡️ Defensive Best Practices
-- Implement exhaustive error handling (\`try/catch\` blocks, HTTP status validation, circuit breakers).
-- Minimize memory leaks through proper resource cleanup (closing DB pools, aborting stale network requests).
-
-#### 3. 💻 Actionable Implementation Blueprint
-\`\`\`typescript
-// Clean, modular execution template
-export async function executeEngineeringTask<T>(input: T): Promise<{ success: boolean; data: T }> {
-  try {
-    // 1. Validate input
-    if (!input) throw new Error("Invalid payload provided");
-    
-    // 2. Perform core business logic
-    console.log("Processing task payload:", input);
-    
-    return { success: true, data: input };
-  } catch (error: any) {
-    console.error("Execution failed:", error.message);
-    throw error;
-  }
-}
 \`\`\`
 
+👉 **Next Step**: Would you like to practice a **Sliding Window** or **Graph Traversal** problem?`;
+  }
+
+  // ----------------------------------------------------
+  // 6. GENERAL PROGRAMMING ROADMAP & ASSISTANCE
+  // ----------------------------------------------------
+  return `### 🗺️ Tailored Engineering Roadmap
+
+To help you achieve your goals, here is a structured 4-phase learning flow:
+
 ---
 
-👉 **How can I tailor this further?** Feel free to ask for a specific language study roadmap (e.g. *C++, Python, React, Java, DSA*) or paste code to debug!`;
+#### 📌 Phase 1: Foundational Primitives (Weeks 1–3)
+- Master variables, types, memory allocation, and control structures.
+- Write modular, pure functions and understand runtime execution contexts.
+
+#### 📌 Phase 2: Architecture & Data Structures (Weeks 4–6)
+- Study linear and non-linear data structures (Arrays, Hash Maps, Trees).
+- Implement clean object-oriented design and component separation.
+
+#### 📌 Phase 3: Asynchronous Systems & APIs (Weeks 7–9)
+- Build resilient network integrations with error boundaries and caching.
+- Connect client interfaces with database layers and backend services.
+
+#### 📌 Phase 4: Production Capstone (Weeks 10–12)
+- Build, test, and deploy a complete production-grade application.
+
+---
+
+👉 **Which specific technology would you like to master?**
+- ⚡ **C++ / Systems Programming**
+- 🧠 **Python & Machine Learning / PyTorch**
+- ☕ **Java & Spring Boot**
+- ⚛️ **JavaScript / TypeScript & React**
+- 🏆 **Data Structures & Algorithms (DSA)**`;
 }
 
 export const aiService = {
@@ -622,12 +656,15 @@ export const aiService = {
   async sendMessage(data: {
     conversationId?: string;
     message: string;
+    history?: ChatMessage[];
   }): Promise<{
     success: boolean;
     conversationId: string;
     userMessage: ChatMessage;
     aiMessage: ChatMessage;
   }> {
+    const currentUser = getStoredUser();
+
     try {
       const res = await api.post('/ai/chat', data);
       if (res.data && res.data.success && res.data.aiMessage) {
@@ -638,7 +675,6 @@ export const aiService = {
       let aiResponseText = '';
       const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
 
-      // Check if user provided a valid Gemini API key starting with AIzaSy
       if (apiKey && apiKey.startsWith('AIzaSy')) {
         try {
           const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
@@ -654,12 +690,16 @@ export const aiService = {
             aiResponseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
           }
         } catch (e) {
-          console.warn('Gemini direct API error, using built-in NLP engine:', e);
+          console.warn('Gemini direct API error, using contextual NLP engine:', e);
         }
       }
 
       if (!aiResponseText) {
-        aiResponseText = generateIntelligentAIResponse(data.message);
+        aiResponseText = generateContextualAIResponse(
+          data.message,
+          data.history || [],
+          currentUser?.targetRole
+        );
       }
 
       const userMsg: ChatMessage = {
