@@ -119,25 +119,30 @@ export const updateLessonProgress = async (req: AuthRequest, res: Response) => {
 
     const { moduleId, isCompleted = true } = req.body;
 
-    const progress = await prisma.userProgress.upsert({
-      where: {
-        userId_moduleId: {
+    const existingProgress = await prisma.userProgress.findFirst({
+      where: { userId, moduleId },
+    });
+
+    let progress;
+    if (existingProgress) {
+      progress = await prisma.userProgress.update({
+        where: { id: existingProgress.id },
+        data: {
+          isCompleted,
+          progressPercentage: isCompleted ? 100 : 50,
+          lastAccessedAt: new Date(),
+        },
+      });
+    } else {
+      progress = await prisma.userProgress.create({
+        data: {
           userId,
           moduleId,
+          isCompleted,
+          progressPercentage: isCompleted ? 100 : 50,
         },
-      },
-      update: {
-        isCompleted,
-        progressPercentage: isCompleted ? 100 : 50,
-        lastAccessedAt: new Date(),
-      },
-      create: {
-        userId,
-        moduleId,
-        isCompleted,
-        progressPercentage: isCompleted ? 100 : 50,
-      },
-    });
+      });
+    }
 
     if (isCompleted) {
       await prisma.user.update({
