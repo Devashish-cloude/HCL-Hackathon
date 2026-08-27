@@ -22,6 +22,7 @@ import {
   Layers,
   Compass,
 } from 'lucide-react';
+import confetti from 'canvas-confetti';
 
 import { useAuth } from '../contexts/AuthContext.js';
 import { getRoleCurriculum } from '../lib/roleCurricula.js';
@@ -63,6 +64,9 @@ export const DashboardPage: React.FC = () => {
 
   const handleToggleTask = async (taskId: string) => {
     if (!data) return;
+    const task = data.todayFocus.find((t) => t.id === taskId);
+    const willBeCompleted = task ? !task.isCompleted : true;
+
     // Optimistic UI update
     setData({
       ...data,
@@ -71,8 +75,17 @@ export const DashboardPage: React.FC = () => {
       ),
     });
 
+    if (willBeCompleted) {
+      confetti({
+        particleCount: 50,
+        spread: 60,
+        origin: { y: 0.7 },
+      });
+    }
+
     try {
       await dashboardService.toggleFocusTask(taskId);
+      fetchDashboard();
     } catch (err) {
       console.error('Failed to toggle task:', err);
       fetchDashboard();
@@ -197,28 +210,40 @@ export const DashboardPage: React.FC = () => {
         {/* Right: Today's Focus Card (1 Column) */}
         <Card className="p-6 flex flex-col justify-between border-slate-200/90 dark:border-slate-800 shadow-sm">
           <div>
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400">
-                <Target className="w-3.5 h-3.5" />
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-950 flex items-center justify-center text-blue-600 dark:text-blue-400">
+                  <Target className="w-3.5 h-3.5" />
+                </div>
+                <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+                  Today's Focus
+                </h3>
               </div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
-                Today's Focus
-              </h3>
+              <Badge
+                variant={todayFocus.every((t) => t.isCompleted) ? 'green' : 'blue'}
+                size="sm"
+              >
+                {todayFocus.filter((t) => t.isCompleted).length} / {todayFocus.length} Done
+              </Badge>
             </div>
 
             {/* Checklist */}
-            <div className="space-y-3.5">
+            <div className="space-y-3">
               {todayFocus.map((task) => (
                 <div
                   key={task.id}
                   onClick={() => handleToggleTask(task.id)}
-                  className="flex items-start gap-3 cursor-pointer group select-none"
+                  className={`p-2.5 rounded-xl border transition-all flex items-start gap-3 cursor-pointer group select-none ${
+                    task.isCompleted
+                      ? 'bg-slate-50/70 dark:bg-slate-800/30 border-slate-200/60 dark:border-slate-800/60'
+                      : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-blue-300 dark:hover:border-blue-700 shadow-2xs'
+                  }`}
                 >
                   <div
                     className={`w-5 h-5 rounded-md border mt-0.5 flex items-center justify-center transition-all ${
                       task.isCompleted
-                        ? 'bg-blue-600 border-blue-600 text-white'
-                        : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 group-hover:border-blue-400'
+                        ? 'bg-blue-600 border-blue-600 text-white shadow-2xs'
+                        : 'border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 group-hover:border-blue-500'
                     }`}
                   >
                     {task.isCompleted && <Check className="w-3.5 h-3.5 stroke-[3]" />}
