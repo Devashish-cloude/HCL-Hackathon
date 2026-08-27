@@ -1,6 +1,7 @@
 import api from './api.js';
 import { LearningPathData, User } from '../types/index.js';
 import { getRoleCurriculum } from '../lib/roleCurricula.js';
+import { userProgressStore } from './userProgressStore.js';
 
 function getStoredUser(): User | null {
   try {
@@ -147,6 +148,23 @@ const devashishLearningPath: LearningPathData = {
 
 function createRoleSpecificLearningPath(user: User): LearningPathData {
   const config = getRoleCurriculum(user.targetRole);
+  const progress = userProgressStore.getProgress(user.id);
+
+  const completedFocusCount = progress.completedFocusTaskIds.length;
+  const completedLessonsCount = progress.completedLessonKeys.length;
+  const timeInvestedHours = Math.round((progress.timeInvestedMinutes / 60) * 10) / 10;
+
+  // Compute dynamic overall progress
+  const dynamicOverallProgress = Math.min(
+    100,
+    Math.round((completedFocusCount * 12) + (completedLessonsCount * 18))
+  );
+
+  const isPhase1Done = completedFocusCount >= 3 || completedLessonsCount >= 2;
+  const isPhase2Done = completedLessonsCount >= 5;
+
+  const totalEstHours = config.learningPhases.reduce((acc, p) => acc + p.estimatedHours, 0);
+  const estRemaining = Math.max(5, totalEstHours - Math.round(timeInvestedHours));
 
   return {
     id: `path-${Date.now()}`,
@@ -154,31 +172,86 @@ function createRoleSpecificLearningPath(user: User): LearningPathData {
     description: `Personalized curriculum tailored for ${user.name}. Master ${config.roleName} systematically through foundational primitives to advanced production architecture.`,
     targetRole: config.roleName,
     stats: {
-      overallProgress: 0,
-      timeInvestedHours: 0,
-      estimatedRemainingHours: config.learningPhases.reduce((acc, p) => acc + p.estimatedHours, 0),
-      currentFocus: config.learningPhases[0]?.modules[0]?.title || 'Fundamentals',
+      overallProgress: dynamicOverallProgress,
+      timeInvestedHours: timeInvestedHours,
+      estimatedRemainingHours: estRemaining,
+      currentFocus: isPhase1Done
+        ? config.learningPhases[1]?.modules[0]?.title || 'Core Architecture'
+        : config.learningPhases[0]?.modules[0]?.title || 'Fundamentals',
     },
-    phases: config.learningPhases.map((phase, idx) => ({
-      id: `phase-${idx + 1}`,
-      phaseNumber: phase.phaseNumber,
-      title: phase.title,
-      description: phase.description,
-      estimatedHours: phase.estimatedHours,
-      status: idx === 0 ? 'IN_PROGRESS' : 'LOCKED',
-      iconType: idx === 0 ? 'academic' : idx === config.learningPhases.length - 1 ? 'trophy' : 'lock',
-      order: phase.phaseNumber,
-      modules: phase.modules.map((m, mIdx) => ({
-        id: `mod-${idx + 1}-${mIdx + 1}`,
-        phaseId: `phase-${idx + 1}`,
-        title: m.title,
-        summary: m.summary,
-        isCurrent: idx === 0 && mIdx === 0,
-        status: idx === 0 ? 'IN_PROGRESS' : 'LOCKED',
-        progressPercentage: 0,
-        order: mIdx + 1,
-      })),
-    })),
+    phases: config.learningPhases.map((phase, idx) => {
+      let phaseStatus: 'COMPLETED' | 'IN_PROGRESS' | 'LOCKED' = 'LOCKED';
+      let iconType = 'lock';
+
+      if (idx === 0) {
+        phaseStatus = isPhase1Done ? 'COMPLETED' : 'IN_PROGRESS';
+        iconType = isPhase1Done ? 'check' : 'academic';
+      } else if (idx === 1) {
+        if (isPhase1Done) {
+          phaseStatus = isPhase2Done ? 'COMPLETED' : 'IN_PROGRESS';
+          iconType = isPhase2Done ? 'check' : 'academic';
+        }
+      }
+
+      if (idx === config.learningPhases.length - 1 && phaseStatus === 'LOCKED') {
+        iconType = 'trophy';
+      }
+
+      return {
+        id: `phase-${idx + 1}`,
+        phaseNumber: phase.phaseNumber,
+        title: phase.title,
+        description: phase.description,
+        estimatedHours: phase.estimatedHours,
+        status: phaseStatus,
+        iconType,
+        order: phase.phaseNumber,
+        modules: phase.modules.map((m, mIdx) => {
+          let modStatus: 'COMPLETED' | 'IN_PROGRESS' | 'LOCKED' = 'LOCKED';
+          let modProgress = 0;
+          let isCurrent = false;
+
+          if (idx === 0) {
+            if (mIdx === 0) {
+              if (completedFocusCount >= 2 || completedLessonsCount >= 1) {
+                modStatus = 'COMPLETED';
+                modProgress = 100;
+              } else {
+                modStatus = 'IN_PROGRESS';
+                modProgress = completedFocusCount * 50;
+                isCurrent = true;
+              }
+            } else if (mIdx === 1) {
+              if (isPhase1Done) {
+                modStatus = 'COMPLETED';
+                modProgress = 100;
+              } else if (completedFocusCount >= 2) {
+                modStatus = 'IN_PROGRESS';
+                modProgress = 50;
+                isCurrent = true;
+              }
+            }
+          } else if (idx === 1 && isPhase1Done) {
+            if (mIdx === 0) {
+              modStatus = 'IN_PROGRESS';
+              modProgress = Math.min(100, completedLessonsCount * 25);
+              isCurrent = true;
+            }
+          }
+
+          return {
+            id: `mod-${idx + 1}-${mIdx + 1}`,
+            phaseId: `phase-${idx + 1}`,
+            title: m.title,
+            summary: m.summary,
+            isCurrent,
+            status: modStatus,
+            progressPercentage: modProgress,
+            order: mIdx + 1,
+          };
+        }),
+      };
+    }),
   };
 }
 
@@ -195,14 +268,32 @@ export const learningPathService = {
       if (res.data && res.data.success && res.data.data) {
         return res.data;
       }
-      const data = isDevashish || !currentUser
+      const data = isDevashish
         ? devashishLearningPath
-        : createRoleSpecificLearningPath(currentUser);
+        : createRoleSpecificLearningPath(currentUser || {
+            id: 'demo-user',
+            name: 'Learner',
+            email: 'user@learnpath.ai',
+            role: 'STUDENT',
+            targetRole: 'Full Stack Engineer',
+            experienceLevel: 'BEGINNER',
+            theme: 'light',
+            learningStreak: 1,
+          });
       return { success: true, data };
     } catch (error) {
-      const data = isDevashish || !currentUser
+      const data = isDevashish
         ? devashishLearningPath
-        : createRoleSpecificLearningPath(currentUser);
+        : createRoleSpecificLearningPath(currentUser || {
+            id: 'demo-user',
+            name: 'Learner',
+            email: 'user@learnpath.ai',
+            role: 'STUDENT',
+            targetRole: 'Full Stack Engineer',
+            experienceLevel: 'BEGINNER',
+            theme: 'light',
+            learningStreak: 1,
+          });
       return { success: true, data };
     }
   },

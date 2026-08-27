@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { courseService } from '../services/courseService.js';
+import { userProgressStore } from '../services/userProgressStore.js';
+import { useAuth } from '../contexts/AuthContext.js';
 import { Course, CourseModule, Lesson } from '../types/index.js';
 import { Card } from '../components/common/Card.js';
 import { Button } from '../components/common/Button.js';
@@ -22,12 +24,11 @@ import confetti from 'canvas-confetti';
 export const CourseDetailPage: React.FC = () => {
   const { slug } = useParams<{ slug: string }>();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const [course, setCourse] = useState<Course | null>(null);
   const [activeModuleIndex, setActiveModuleIndex] = useState(0);
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
-  const [completedLessons, setCompletedLessons] = useState<{ [key: string]: boolean }>({
-    '0-0': true,
-  });
+  const [completedLessons, setCompletedLessons] = useState<{ [key: string]: boolean }>({});
   const [userCode, setUserCode] = useState('');
   const [codeOutput, setCodeOutput] = useState<string | null>(null);
   const [isRunningCode, setIsRunningCode] = useState(false);
@@ -40,6 +41,27 @@ export const CourseDetailPage: React.FC = () => {
         const res = await courseService.getCourseBySlug(slug);
         if (res.success && res.data) {
           setCourse(res.data);
+          
+          // Populate completed lessons from persistent storage
+          const stored = userProgressStore.getProgress(user?.id);
+          const initialCompleted: { [key: string]: boolean } = {};
+          
+          res.data.modules?.forEach((mod, mIdx) => {
+            mod.lessons?.forEach((_, lIdx) => {
+              const key = `${slug}:${mIdx}:${lIdx}`;
+              if (stored.completedLessonKeys.includes(key)) {
+                initialCompleted[`${mIdx}-${lIdx}`] = true;
+              }
+            });
+          });
+
+          // Always have at least 0-0 completed if devashish
+          if (user?.email?.includes('devashish')) {
+            initialCompleted['0-0'] = true;
+          }
+
+          setCompletedLessons(initialCompleted);
+
           // Initialize first lesson code if any
           const firstLesson = res.data.modules?.[0]?.lessons?.[0];
           if (firstLesson?.codeSnippet) {
@@ -53,7 +75,7 @@ export const CourseDetailPage: React.FC = () => {
       }
     };
     loadCourse();
-  }, [slug]);
+  }, [slug, user?.id]);
 
   const currentModule: CourseModule | undefined = course?.modules?.[activeModuleIndex];
   const currentLesson: Lesson | undefined = currentModule?.lessons?.[activeLessonIndex];
@@ -91,6 +113,11 @@ export const CourseDetailPage: React.FC = () => {
   const handleMarkComplete = () => {
     const key = `${activeModuleIndex}-${activeLessonIndex}`;
     setCompletedLessons((prev) => ({ ...prev, [key]: true }));
+
+    // Persist in User Progress Store
+    if (slug) {
+      userProgressStore.markLessonComplete(slug, activeModuleIndex, activeLessonIndex, user?.id);
+    }
 
     confetti({
       particleCount: 50,
@@ -158,131 +185,134 @@ export const CourseDetailPage: React.FC = () => {
           <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-6">
             <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-4">
               <div>
-                <Badge variant="blue" size="sm">
-                  {currentLesson?.type || 'LESSON'}
-                </Badge>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-2">
-                  {currentLesson?.title || 'Lesson Overview'}
+                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-600 dark:text-blue-400">
+                  Module {activeModuleIndex + 1}: {currentModule?.title}
+                </span>
+                <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-0.5">
+                  {currentLesson?.title}
                 </h3>
               </div>
-              <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                {currentLesson?.durationMinutes || 15} min estimated
-              </span>
+              <Badge variant="blue" size="sm">
+                {currentLesson?.type.replace('_', ' ')}
+              </Badge>
             </div>
 
-            {/* Lesson Body Content */}
-            <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 space-y-4">
-              {currentLesson?.content.split('\n\n').map((paragraph, pIdx) => (
-                <p key={pIdx} className="leading-relaxed">
-                  {paragraph}
-                </p>
-              ))}
+            {/* Video / Reading Content Area */}
+            {(currentLesson as any)?.videoUrl ? (
+              <div className="relative rounded-xl overflow-hidden bg-slate-950 aspect-video flex items-center justify-center border border-slate-800">
+                <iframe
+                  src={(currentLesson as any).videoUrl}
+                  title={currentLesson?.title || 'Lesson Video'}
+                  className="w-full h-full"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                  allowFullScreen
+                />
+              </div>
+            ) : null}
 
-              {/* Interactive Code Playground if lesson has codeSnippet */}
-              {currentLesson?.codeSnippet && (
-                <div className="mt-6 space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
-                      <Terminal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      <span>Interactive Code Workspace</span>
-                    </div>
-                    <span className="text-[11px] text-slate-400 font-mono">TypeScript / ES6</span>
+            {/* Reading / Explanation Markdown */}
+            {currentLesson?.content ? (
+              <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-slate-800/40 p-4 sm:p-5 rounded-xl border border-slate-100 dark:border-slate-800 whitespace-pre-line">
+                {currentLesson.content}
+              </div>
+            ) : null}
+
+            {/* Interactive Coding Challenge Workspace */}
+            {currentLesson?.type === 'CODING_CHALLENGE' ? (
+              <div className="space-y-4 pt-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Terminal className="w-4 h-4 text-emerald-500" />
+                    <h4 className="text-xs font-bold text-slate-900 dark:text-slate-100">
+                      Interactive Code Challenge
+                    </h4>
                   </div>
+                  <span className="text-[10px] font-mono text-slate-400">Node.js / TypeScript</span>
+                </div>
 
+                <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                  <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
+                    <span>solution.ts</span>
+                    <span>UTF-8</span>
+                  </div>
                   <textarea
-                    rows={8}
                     value={userCode}
                     onChange={(e) => setUserCode(e.target.value)}
-                    className="w-full p-4 bg-slate-950 text-emerald-400 font-mono text-xs rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 selection:bg-blue-600"
-                    spellCheck={false}
+                    rows={8}
+                    className="w-full p-4 bg-slate-950 text-emerald-400 font-mono text-xs focus:outline-none resize-none leading-relaxed"
+                    placeholder="// Write your code solution here..."
                   />
-
-                  <div className="flex items-center justify-between">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={handleRunCode}
-                      isLoading={isRunningCode}
-                      leftIcon={<Sparkles className="w-3.5 h-3.5 text-blue-600" />}
-                      className="border-slate-300 dark:border-slate-700"
-                    >
-                      Run & Test Solution
-                    </Button>
-
-                    {codeOutput && (
-                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-fadeIn">
-                        <Check className="w-4 h-4" />
-                        <span>{codeOutput}</span>
-                      </span>
-                    )}
-                  </div>
                 </div>
-              )}
-            </div>
 
-            {/* Action Bar */}
+                <div className="flex items-center justify-between gap-4">
+                  <Button
+                    variant="primary"
+                    size="sm"
+                    onClick={handleRunCode}
+                    disabled={isRunningCode}
+                    className="font-semibold text-xs cursor-pointer"
+                    leftIcon={<Sparkles className="w-3.5 h-3.5" />}
+                  >
+                    {isRunningCode ? 'Testing Solution...' : 'Run & Test Solution'}
+                  </Button>
+                </div>
+
+                {codeOutput && (
+                  <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs font-mono text-emerald-300">
+                    {codeOutput}
+                  </div>
+                )}
+              </div>
+            ) : null}
+
+            {/* Footer Action Buttons */}
             <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  if (activeLessonIndex > 0) {
-                    setActiveLessonIndex(activeLessonIndex - 1);
-                  } else if (activeModuleIndex > 0 && course.modules) {
-                    setActiveModuleIndex(activeModuleIndex - 1);
-                    const prevModule = course.modules[activeModuleIndex - 1];
-                    setActiveLessonIndex((prevModule.lessons?.length || 1) - 1);
-                  }
-                }}
-                disabled={activeLessonIndex === 0 && activeModuleIndex === 0}
-              >
-                Previous Lesson
-              </Button>
+              <span className="text-xs text-slate-400 dark:text-slate-500">
+                Duration: ~{currentLesson?.durationMinutes} min
+              </span>
 
               <Button
                 variant="primary"
-                size="sm"
+                size="md"
                 onClick={handleMarkComplete}
-                className="font-semibold shadow-sm"
+                className="font-semibold text-xs cursor-pointer"
+                leftIcon={<Check className="w-4 h-4" />}
               >
-                <CheckCircle className="w-4 h-4 mr-1.5" />
-                Mark Complete & Next
+                Mark Lesson Complete
               </Button>
             </div>
           </Card>
         </div>
 
-        {/* Syllabus / Module List (1 Col) */}
-        <div className="space-y-6">
-          <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+        {/* Syllabus / Modules Accordion Sidebar (1 Col) */}
+        <div className="space-y-4">
+          <Card className="p-5 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
             <div>
-              <div className="flex justify-between items-baseline mb-2">
-                <h4 className="font-bold text-slate-900 dark:text-slate-100 text-sm">
-                  Course Syllabus
-                </h4>
-                <span className="text-xs font-bold text-blue-600 dark:text-blue-400">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                Course Progress
+              </span>
+              <div className="flex items-center justify-between mt-1">
+                <span className="text-xl font-extrabold text-slate-900 dark:text-slate-100">
                   {progressPercent}%
                 </span>
+                <span className="text-xs font-semibold text-slate-500">
+                  {completedCount} of {totalLessonsCount} lessons
+                </span>
               </div>
-              <ProgressBar value={progressPercent} size="sm" />
+              <ProgressBar value={progressPercent} size="sm" className="mt-2" />
             </div>
 
-            {/* Modules List */}
-            <div className="space-y-5 pt-2">
-              {course.modules?.map((mod, mIdx) => (
-                <div key={mod.id} className="space-y-2">
-                  <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
-                    <span>
-                      Module {mIdx + 1}: {mod.title}
-                    </span>
-                  </div>
-
+            <div className="border-t border-slate-100 dark:border-slate-800 pt-3 space-y-4">
+              {course.modules?.map((module, mIdx) => (
+                <div key={module.id} className="space-y-2">
+                  <h4 className="text-xs font-bold text-slate-800 dark:text-slate-200">
+                    Module {mIdx + 1}: {module.title}
+                  </h4>
                   <div className="space-y-1">
-                    {mod.lessons?.map((lesson, lIdx) => {
+                    {module.lessons?.map((lesson, lIdx) => {
+                      const isCompleted = !!completedLessons[`${mIdx}-${lIdx}`];
+                      const isActive = mIdx === activeModuleIndex && lIdx === activeLessonIndex;
                       const Icon = getLessonIcon(lesson.type);
-                      const isCurrent =
-                        activeModuleIndex === mIdx && activeLessonIndex === lIdx;
-                      const isDone = completedLessons[`${mIdx}-${lIdx}`];
 
                       return (
                         <button
@@ -292,23 +322,23 @@ export const CourseDetailPage: React.FC = () => {
                             setActiveLessonIndex(lIdx);
                           }}
                           type="button"
-                          className={`w-full text-left p-2.5 rounded-xl text-xs flex items-center justify-between transition-all cursor-pointer ${
-                            isCurrent
-                              ? 'bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 font-bold border border-blue-200 dark:border-blue-800'
-                              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800/60'
+                          className={`w-full flex items-center justify-between p-2 rounded-lg text-left text-xs transition-colors cursor-pointer ${
+                            isActive
+                              ? 'bg-blue-50 dark:bg-blue-950/60 text-blue-700 dark:text-blue-300 font-semibold border border-blue-200 dark:border-blue-800'
+                              : 'hover:bg-slate-50 dark:hover:bg-slate-800/60 text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           <div className="flex items-center gap-2 truncate">
-                            <Icon
-                              className={`w-3.5 h-3.5 flex-shrink-0 ${
-                                isCurrent ? 'text-blue-600' : 'text-slate-400'
-                              }`}
-                            />
+                            {isCompleted ? (
+                              <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
+                            ) : (
+                              <Icon className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                            )}
                             <span className="truncate">{lesson.title}</span>
                           </div>
-                          {isDone && (
-                            <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0" />
-                          )}
+                          <span className="text-[10px] text-slate-400 flex-shrink-0 ml-2">
+                            {lesson.durationMinutes}m
+                          </span>
                         </button>
                       );
                     })}

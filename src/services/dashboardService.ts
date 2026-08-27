@@ -1,6 +1,7 @@
 import api from './api.js';
 import { DashboardData, User } from '../types/index.js';
 import { getRoleCurriculum } from '../lib/roleCurricula.js';
+import { userProgressStore } from './userProgressStore.js';
 
 function getStoredUser(): User | null {
   try {
@@ -33,7 +34,7 @@ const devashishSeededData: DashboardData = {
       title: 'Complete Async/Await lesson',
       typeLabel: 'Video & Quiz',
       durationMinutes: 15,
-      isCompleted: false,
+      isCompleted: true,
       order: 1,
     },
     {
@@ -41,7 +42,7 @@ const devashishSeededData: DashboardData = {
       title: 'Practice 5 JavaScript questions',
       typeLabel: 'Coding Challenge',
       durationMinutes: 20,
-      isCompleted: false,
+      isCompleted: true,
       order: 2,
     },
     {
@@ -83,6 +84,78 @@ const devashishSeededData: DashboardData = {
 
 function createRoleSpecificUserDashboard(user: User): DashboardData {
   const config = getRoleCurriculum(user.targetRole);
+  const progress = userProgressStore.getProgress(user.id);
+
+  // Map today's focus with persistent completed state
+  const updatedFocus = config.todayFocus.map((task) => ({
+    ...task,
+    isCompleted: progress.completedFocusTaskIds.includes(task.id),
+  }));
+
+  const completedFocusCount = updatedFocus.filter((t) => t.isCompleted).length;
+  const totalFocusCount = updatedFocus.length || 3;
+  const completedLessonsCount = progress.completedLessonKeys.length;
+
+  // Dynamic hero calculation
+  let heroProgress = 0;
+  let currentModNumber = config.heroCourse.currentModuleNumber;
+  let currentModTitle = config.heroCourse.currentModuleTitle;
+  let heroTag: 'Start Learning' | 'Continue Learning' = 'Start Learning';
+
+  if (completedFocusCount > 0 || completedLessonsCount > 0) {
+    heroTag = 'Continue Learning';
+    
+    // Focus tasks contribution (up to 60%) + Lessons contribution (up to 40%)
+    const focusPct = Math.round((completedFocusCount / totalFocusCount) * 60);
+    const lessonPct = Math.min(40, completedLessonsCount * 20);
+    heroProgress = Math.min(100, focusPct + lessonPct);
+
+    if (heroProgress >= 100) {
+      currentModNumber = Math.min(config.heroCourse.totalModules, 2);
+      currentModTitle = config.learningPhases[0]?.modules[1]?.title || 'Advanced Architectural Patterns';
+    }
+  }
+
+  // Calculate dynamic roadmap steps
+  const updatedRoadmapSteps = config.roadmapSteps.map((step, idx) => {
+    if (idx === 0) {
+      // Step 1 is completed if all focus tasks or 2+ lessons done
+      if (completedFocusCount === totalFocusCount || completedLessonsCount >= 2 || heroProgress >= 70) {
+        return { ...step, status: 'COMPLETED' as const };
+      }
+      return { ...step, status: 'IN_PROGRESS' as const };
+    }
+
+    if (idx === 1) {
+      // Step 2 unlocks when Step 1 is completed
+      if (completedFocusCount === totalFocusCount || completedLessonsCount >= 2 || heroProgress >= 70) {
+        if (completedLessonsCount >= 4) {
+          return { ...step, status: 'COMPLETED' as const };
+        }
+        return { ...step, status: 'IN_PROGRESS' as const };
+      }
+      return { ...step, status: 'LOCKED' as const };
+    }
+
+    return { ...step, status: 'LOCKED' as const };
+  });
+
+  // Calculate overall stats dynamically
+  const dynamicOverallProgress = Math.min(
+    100,
+    Math.round(
+      (completedFocusCount / totalFocusCount) * 30 +
+      completedLessonsCount * 15
+    )
+  );
+
+  const dynamicSkillsMastered = completedFocusCount + completedLessonsCount;
+  const dynamicStreak = completedFocusCount > 0 || completedLessonsCount > 0 ? 2 : 1;
+  const dynamicCoursesCompleted = heroProgress >= 100 ? 1 : 0;
+  const remainingMinutes = Math.max(
+    15,
+    config.heroCourse.estimatedMinutes - (completedFocusCount * 20 + completedLessonsCount * 30)
+  );
 
   return {
     user: {
@@ -94,23 +167,23 @@ function createRoleSpecificUserDashboard(user: User): DashboardData {
       title: config.heroCourse.title,
       slug: config.heroCourse.slug,
       description: config.heroCourse.description,
-      currentModuleTitle: config.heroCourse.currentModuleTitle,
-      currentModuleNumber: config.heroCourse.currentModuleNumber,
+      currentModuleTitle: currentModTitle,
+      currentModuleNumber: currentModNumber,
       totalModules: config.heroCourse.totalModules,
-      progressPercentage: 0,
-      timeRemainingMinutes: config.heroCourse.estimatedMinutes,
-      tag: 'Start Learning',
+      progressPercentage: heroProgress,
+      timeRemainingMinutes: remainingMinutes,
+      tag: heroTag,
     },
-    todayFocus: config.todayFocus,
+    todayFocus: updatedFocus,
     roadmapTrack: {
       pathTitle: `${config.roleName} Path`,
-      steps: config.roadmapSteps,
+      steps: updatedRoadmapSteps,
     },
     stats: {
-      overallProgress: 0,
-      learningStreak: 1,
-      skillsMastered: 0,
-      coursesCompleted: 0,
+      overallProgress: dynamicOverallProgress,
+      learningStreak: dynamicStreak,
+      skillsMastered: dynamicSkillsMastered,
+      coursesCompleted: dynamicCoursesCompleted,
     },
     recommendation: {
       id: `rec-${config.recommendation.slug}`,
@@ -141,19 +214,40 @@ export const dashboardService = {
         }
         return res.data;
       }
-      const data = isDevashish || !currentUser
+      const data = isDevashish
         ? devashishSeededData
-        : createRoleSpecificUserDashboard(currentUser);
+        : createRoleSpecificUserDashboard(currentUser || {
+            id: 'demo-user',
+            name: 'Learner',
+            email: 'user@learnpath.ai',
+            role: 'STUDENT',
+            targetRole: 'Full Stack Engineer',
+            experienceLevel: 'BEGINNER',
+            theme: 'light',
+            learningStreak: 1,
+          });
       return { success: true, data };
     } catch (error) {
-      const data = isDevashish || !currentUser
+      const data = isDevashish
         ? devashishSeededData
-        : createRoleSpecificUserDashboard(currentUser);
+        : createRoleSpecificUserDashboard(currentUser || {
+            id: 'demo-user',
+            name: 'Learner',
+            email: 'user@learnpath.ai',
+            role: 'STUDENT',
+            targetRole: 'Full Stack Engineer',
+            experienceLevel: 'BEGINNER',
+            theme: 'light',
+            learningStreak: 1,
+          });
       return { success: true, data };
     }
   },
 
   async toggleFocusTask(taskId: string): Promise<{ success: boolean; data: any }> {
+    const currentUser = getStoredUser();
+    userProgressStore.toggleFocusTask(taskId, currentUser?.id);
+
     try {
       const res = await api.patch(`/progress/focus/${taskId}/toggle`);
       return res.data;
