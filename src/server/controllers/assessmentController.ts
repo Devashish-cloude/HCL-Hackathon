@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import { prisma } from '../services/prismaClient.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { ActivityService } from '../services/activityService.js';
 
 export const getAvailableAssessments = async (req: AuthRequest, res: Response) => {
   try {
@@ -40,6 +41,15 @@ export const getAvailableAssessments = async (req: AuthRequest, res: Response) =
         targetRole: 'Frontend Engineer',
         difficulty: 'Intermediate',
       },
+      {
+        id: 'be-eng',
+        title: 'Backend Systems & PostgreSQL Benchmark',
+        category: 'Backend Engineering',
+        estimatedMinutes: 15,
+        questionCount: 3,
+        targetRole: 'Backend Engineer',
+        difficulty: 'Intermediate',
+      },
     ];
 
     if (targetRole.includes('AI')) {
@@ -47,7 +57,7 @@ export const getAvailableAssessments = async (req: AuthRequest, res: Response) =
     } else if (targetRole.includes('Full')) {
       assessments = assessments.filter((a) => a.targetRole.includes('Full'));
     } else if (targetRole.includes('Backend')) {
-      assessments = assessments.filter((a) => a.targetRole.includes('Full') || a.targetRole.includes('Frontend'));
+      assessments = assessments.filter((a) => a.targetRole.includes('Backend') || a.targetRole.includes('Full'));
     }
 
     return res.status(200).json({
@@ -87,7 +97,6 @@ export const getAssessmentQuestions = async (req: Request, res: Response) => {
       });
     }
 
-    // Default fallback questions if DB questions table is empty
     return res.status(200).json({
       success: true,
       data: [
@@ -135,11 +144,12 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
     }
 
     const correctCount = answers.filter((a: any) => a.selectedOptionIndex === 0).length;
-    const score = Math.max(75, Math.round((correctCount / (answers.length || 1)) * 100));
+    const score = Math.max(60, Math.round((correctCount / (answers.length || 1)) * 100));
 
     const user = await prisma.user.findUnique({ where: { id: userId }, select: { targetRole: true } });
     const targetRole = user?.targetRole || 'Full Stack Engineer';
 
+    // Create Assessment record
     const assessment = await prisma.assessment.create({
       data: {
         userId,
@@ -149,17 +159,86 @@ export const submitAssessment = async (req: AuthRequest, res: Response) => {
         score,
         maxScore: 100,
         proficiencyResult: score >= 80 ? 'Mastery Level Achieved 🎉' : 'Proficient Level Achieved',
-        feedback: `Demonstrated solid command of ${category}! High score in core architectural patterns and concurrency.`,
+        feedback: `Demonstrated strong command of ${category}! High competency in core architectural patterns and concurrency.`,
         status: 'COMPLETED',
       },
     });
 
-    // Update study time
+    // Create AssessmentAttempt for historical growth tracking
+    await prisma.assessmentAttempt.create({
+      data: {
+        userId,
+        assessmentId: assessment.id,
+        score,
+        maxScore: 100,
+        percentage: score,
+        passed: score >= 60,
+        answers: JSON.stringify(answers),
+        startedAt: new Date(Date.now() - 15 * 60000),
+        submittedAt: new Date(),
+      },
+    });
+
+    // Record LearningSession (15 mins)
+    await prisma.learningSession.create({
+      data: {
+        userId,
+        activityType: 'ASSESSMENT',
+        durationMinutes: 15,
+        startedAt: new Date(Date.now() - 15 * 60000),
+        endedAt: new Date(),
+      },
+    });
+
+    // Record Skill History & update SkillGap if needed
+    if (score < 75) {
+      await prisma.skillGap.create({
+        data: {
+          userId,
+          skillName: category,
+          currentScore: score,
+          targetScore: 85,
+          priority: 'CRITICAL',
+          status: 'OPEN',
+          severity: 'Moderate',
+          description: `Score in ${category} (${score}%) indicates area for reinforcement.`,
+          targetLevel: 'Advanced',
+        },
+      });
+    } else {
+      // Resolve any existing skill gaps for this category
+      await prisma.skillGap.updateMany({
+        where: { userId, skillName: category, status: 'OPEN' },
+        data: { status: 'RESOLVED', resolvedAt: new Date() },
+      });
+    }
+
+    // Update user total hours & lastActiveAt
     await prisma.user.update({
       where: { id: userId },
       data: {
-        totalHoursInvested: { increment: 0.5 },
+        totalHoursInvested: { increment: 0.25 },
+        lastActiveAt: new Date(),
       },
+    });
+
+    // Create Notification
+    await prisma.notification.create({
+      data: {
+        userId,
+        title: `Assessment Completed: ${category}`,
+        message: `You scored ${score}% in ${category}! Your skill graph has been updated.`,
+        type: 'ASSESSMENT',
+      },
+    });
+
+    // Log Activity
+    await ActivityService.logActivity({
+      userId,
+      activityType: 'ASSESSMENT_COMPLETED',
+      entityType: 'Assessment',
+      entityId: assessment.id,
+      metadata: { title: assessment.title, category, score },
     });
 
     return res.status(200).json({

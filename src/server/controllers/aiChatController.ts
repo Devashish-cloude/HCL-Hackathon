@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../services/prismaClient.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
 import { MentorService } from '../services/ai/mentorService.js';
+import { ActivityService } from '../services/activityService.js';
 
 export const sendChatMessage = async (req: AuthRequest, res: Response) => {
   try {
@@ -29,6 +30,14 @@ export const sendChatMessage = async (req: AuthRequest, res: Response) => {
         },
       });
       activeConversationId = newConv.id;
+
+      await ActivityService.logActivity({
+        userId,
+        activityType: 'AI_CHAT_STARTED',
+        entityType: 'Conversation',
+        entityId: newConv.id,
+        metadata: { title: newConv.title },
+      });
     }
 
     // Save user message to database
@@ -82,6 +91,15 @@ export const sendChatMessage = async (req: AuthRequest, res: Response) => {
     await prisma.conversation.update({
       where: { id: activeConversationId },
       data: { updatedAt: new Date() },
+    });
+
+    // Log AI message activity
+    await ActivityService.logActivity({
+      userId,
+      activityType: 'AI_MESSAGE_SENT',
+      entityType: 'Conversation',
+      entityId: activeConversationId,
+      metadata: { messageLength: message.length },
     });
 
     return res.status(200).json({

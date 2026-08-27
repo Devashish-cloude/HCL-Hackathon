@@ -1,6 +1,8 @@
 import { Response } from 'express';
 import { prisma } from '../services/prismaClient.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { AnalyticsService } from '../services/analyticsService.js';
+import { ActivityService } from '../services/activityService.js';
 
 interface HeroCourseConfig {
   title: string;
@@ -79,9 +81,7 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
     let user = await prisma.user.findUnique({
       where: { id: userId },
       include: {
-        focusTasks: {
-          orderBy: { order: 'asc' },
-        },
+        focusTasks: { orderBy: { order: 'asc' } },
         learningPaths: {
           include: {
             phases: {
@@ -90,10 +90,9 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
             },
           },
         },
-        userSkills: {
-          include: { skill: true },
-        },
-        progress: true,
+        userSkills: { include: { skill: true } },
+        enrollments: { include: { course: true } },
+        skillGaps: { where: { status: 'OPEN' } },
         recommendations: {
           where: { isDismissed: false },
           include: { course: true },
@@ -136,7 +135,8 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
             },
           },
           userSkills: { include: { skill: true } },
-          progress: true,
+          enrollments: { include: { course: true } },
+          skillGaps: { where: { status: 'OPEN' } },
           recommendations: {
             where: { isDismissed: false },
             include: { course: true },
@@ -146,15 +146,18 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
       });
     }
 
-    const completedTasksCount = user!.focusTasks.filter((t) => t.isCompleted).length;
-    const completedProgressCount = user!.progress.filter((p) => p.isCompleted).length;
-    const totalCompletedUnits = completedTasksCount + completedProgressCount;
+    // Dynamic metrics from PostgreSQL analytics service
+    const metrics = await AnalyticsService.getUserMetrics(userId);
+    const recentActivities = await ActivityService.getRecentActivities(userId, 5);
 
+    const completedTasksCount = user!.focusTasks.filter((t) => t.isCompleted).length;
     const heroConfig = roleHeroMap[user!.targetRole] || roleHeroMap['Full Stack Engineer'];
 
-    const heroProgress = Math.min(100, Math.round(totalCompletedUnits * 33));
+    // Find active enrollment if any
+    const activeEnrollment = user!.enrollments.find((e) => e.course.slug === heroConfig.slug);
+    const heroProgress = activeEnrollment ? activeEnrollment.progressPercentage : Math.min(100, Math.round(completedTasksCount * 33));
     const currentModuleNumber = heroProgress >= 66 ? 3 : heroProgress >= 33 ? 2 : 1;
-    const timeRemaining = Math.max(15, heroConfig.estimatedMinutes - totalCompletedUnits * 30);
+    const timeRemaining = Math.max(15, heroConfig.estimatedMinutes - Math.round(heroProgress * 1.8));
 
     const activeHeroCourse = {
       title: heroConfig.title,
@@ -170,6 +173,7 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
 
     // Calculate dynamic Roadmap Steps
     const activePath = user!.learningPaths[0];
+    const totalCompletedUnits = completedTasksCount + metrics.lessonsCompleted;
     const roadmapSteps = [
       { id: '1', title: '1. Foundation', status: totalCompletedUnits >= 1 ? 'COMPLETED' : 'IN_PROGRESS' },
       { id: '2', title: `2. ${user!.targetRole.split(' ')[0]} Core`, status: totalCompletedUnits >= 2 ? 'COMPLETED' : totalCompletedUnits >= 1 ? 'IN_PROGRESS' : 'LOCKED' },
@@ -177,29 +181,30 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
       { id: '4', title: '4. Capstone System', status: totalCompletedUnits >= 6 ? 'COMPLETED' : 'LOCKED' },
     ];
 
-    // Stats metrics
-    const masteredSkillsCount = user!.userSkills.filter((s) => s.status === 'MASTERED' || s.proficiencyScore >= 80).length + Math.floor(totalCompletedUnits / 2);
-    const overallProgress = Math.min(100, Math.round(totalCompletedUnits * 20));
-    const coursesCompleted = heroProgress >= 100 ? 1 : 0;
-
     const stats = {
-      overallProgress: overallProgress,
-      learningStreak: user!.learningStreak || (totalCompletedUnits > 0 ? 2 : 1),
-      skillsMastered: masteredSkillsCount,
-      coursesCompleted,
+      overallProgress: Math.min(100, Math.round(totalCompletedUnits * 20)),
+      learningStreak: metrics.currentStreak,
+      longestStreak: metrics.longestStreak,
+      skillsMastered: metrics.skillsMastered || Math.floor(totalCompletedUnits / 2),
+      coursesCompleted: metrics.coursesCompleted,
+      lessonsCompleted: metrics.lessonsCompleted,
+      totalHours: metrics.totalHours,
     };
 
     // "What Should I Do Next?" Dynamic Recommendation
+    const openGap = user!.skillGaps[0];
     const defaultRec = {
       id: `rec-${heroConfig.slug}`,
-      title: heroConfig.title,
-      reason: totalCompletedUnits === 0
+      title: openGap ? `Strengthen ${openGap.skillName}` : heroConfig.title,
+      reason: openGap
+        ? `Target priority skill gap identified in ${openGap.skillName} (${openGap.currentScore}% vs ${openGap.targetScore}% target).`
+        : totalCompletedUnits === 0
         ? `Start your baseline curriculum for ${user!.targetRole} to calibrate your skill graph.`
         : `Continue where you left off in Module ${currentModuleNumber} to solidify key architectural patterns.`,
       course: {
-        id: heroConfig.slug,
-        title: heroConfig.title,
-        slug: heroConfig.slug,
+        id: openGap?.recommendedCourseId || heroConfig.slug,
+        title: openGap?.recommendedCourseTitle || heroConfig.title,
+        slug: openGap?.recommendedCourseId || heroConfig.slug,
       },
     };
 
@@ -222,6 +227,7 @@ export const getDashboardData = async (req: AuthRequest, res: Response) => {
         },
         stats,
         recommendation,
+        recentActivities: recentActivities.all,
       },
     });
   } catch (error: any) {

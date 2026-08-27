@@ -8,128 +8,155 @@ generator client {
 }
 
 model User {
-  id                  String             @id @default(uuid())
-  email               String             @unique
+  id                  String               @id @default(uuid())
+  email               String               @unique
   passwordHash        String
   name                String
   avatarUrl           String?
-  role                String             @default("STUDENT")
-  headline            String             @default("Professional Learner")
+  role                String               @default("STUDENT")
+  status              String               @default("ACTIVE")
+  headline            String               @default("Professional Learner")
   bio                 String?
-  targetRole          String             @default("Frontend Engineer")
-  experienceLevel     String             @default("Intermediate")
-  theme               String             @default("light")
-  dailyGoalMinutes    Int                @default(45)
-  learningStreak      Int                @default(1)
-  totalHoursInvested  Float              @default(0.0)
-  onboardingCompleted Boolean            @default(false)
+  targetRole          String               @default("Frontend Engineer")
+  experienceLevel     String               @default("Intermediate")
+  theme               String               @default("light")
+  dailyGoalMinutes    Int                  @default(45)
+  learningStreak      Int                  @default(1)
+  longestStreak       Int                  @default(1)
+  totalHoursInvested  Float                @default(0.0)
+  onboardingCompleted Boolean              @default(false)
+  emailVerified       Boolean              @default(true)
   interests           String?
   learningStyle       String?
-  lastActiveAt        DateTime           @default(now())
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
+  lastLoginAt         DateTime?
+  lastActiveAt        DateTime             @default(now())
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
 
-  learningPaths       LearningPath[]
+  loginHistory        LoginHistory[]
+  sessions            Session[]
+  activities          UserActivity[]
+  enrollments         CourseEnrollment[]
   progress            UserProgress[]
+  moduleProgress      ModuleProgress[]
+  lessonProgress      LessonProgress[]
+  learningSessions    LearningSession[]
+  learningPaths       LearningPath[]
   focusTasks          DailyFocusTask[]
   userSkills          UserSkill[]
+  skillHistory        SkillHistory[]
   skillGaps           SkillGap[]
   assessments         Assessment[]
+  assessmentAttempts  AssessmentAttempt[]
+  quizAttempts        QuizAttempt[]
   conversations       Conversation[]
   recommendations     Recommendation[]
   notifications       Notification[]
+
+  @@index([email])
+  @@index([createdAt])
 }
 
-model LearningPath {
-  id                  String          @id @default(uuid())
-  userId              String
-  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title               String          @default("Frontend Engineering Path")
-  description         String
-  targetRole          String
-  totalProgress       Int             @default(0)
-  totalHoursEstimated Int             @default(90)
-  totalHoursInvested  Float           @default(0.0)
-  currentFocus        String          @default("Core Foundations")
-  currentPhaseIndex   Int             @default(1)
-  createdAt           DateTime        @default(now())
-  updatedAt           DateTime        @updatedAt
+model LoginHistory {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  loginTimestamp  DateTime  @default(now())
+  logoutTimestamp DateTime?
+  isSuccessful    Boolean   @default(true)
+  ipAddress       String?
+  userAgent       String?
+  sessionId       String?
 
-  phases              LearningPhase[]
+  @@index([userId, loginTimestamp])
 }
 
-model LearningPhase {
-  id             String         @id @default(uuid())
-  learningPathId String
-  learningPath   LearningPath   @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
-  phaseNumber    Int
-  title          String
-  description    String?
-  estimatedHours Int
-  status         String         @default("LOCKED")
-  iconType       String         @default("book")
-  order          Int
+model Session {
+  id           String    @id @default(uuid())
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash    String?
+  userAgent    String?
+  ipAddress    String?
+  lastActiveAt DateTime  @default(now())
+  expiresAt    DateTime
+  revokedAt    DateTime?
+  createdAt    DateTime  @default(now())
 
-  modules        PhaseModule[]
+  @@index([userId])
 }
 
-model Course {
-  id              String           @id @default(uuid())
-  title           String
-  slug            String           @unique
-  description     String
-  category        String
-  difficulty      String           @default("Intermediate")
-  durationMinutes Int              @default(180)
-  icon            String?
-  coverImage      String?
-  isFeatured      Boolean          @default(false)
-  isRecommended   Boolean          @default(false)
-  createdAt       DateTime         @default(now())
+model UserActivity {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  activityType String   // LOGIN, LOGOUT, SIGNUP, COURSE_STARTED, COURSE_COMPLETED, MODULE_COMPLETED, LESSON_COMPLETED, QUIZ_COMPLETED, ASSESSMENT_COMPLETED, AI_MESSAGE_SENT, DAILY_TASK_COMPLETED, THEME_CHANGED, PROFILE_UPDATED
+  entityType   String?  // Course, Lesson, Module, Assessment, DailyTask, Conversation, User
+  entityId     String?
+  metadata     String?  // JSON metadata (e.g. {"courseTitle":"...", "score":85})
+  createdAt    DateTime @default(now())
 
-  modules         Module[]
-  recommendations Recommendation[]
+  @@index([userId, createdAt])
+  @@index([userId, activityType])
 }
 
-model Module {
-  id               String         @id @default(uuid())
-  courseId         String
-  course           Course         @relation(fields: [courseId], references: [id], onDelete: Cascade)
-  title            String
-  description      String
-  order            Int
-  estimatedMinutes Int            @default(60)
-  totalLessons     Int            @default(5)
+model CourseEnrollment {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId           String
+  course             Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status             String    @default("NOT_STARTED") // NOT_STARTED, IN_PROGRESS, COMPLETED, PAUSED
+  progressPercentage Int       @default(0)
+  timeSpentMinutes   Int       @default(0)
+  enrolledAt         DateTime  @default(now())
+  startedAt          DateTime?
+  completedAt        DateTime?
+  lastAccessedAt     DateTime  @default(now())
 
-  lessons          Lesson[]
-  phaseModules     PhaseModule[]
-  userProgress     UserProgress[]
+  @@unique([userId, courseId])
+  @@index([userId, status])
 }
 
-model PhaseModule {
-  id                 String         @id @default(uuid())
-  phaseId            String
-  phase              LearningPhase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
-  moduleId           String?
-  module             Module?        @relation(fields: [moduleId], references: [id], onDelete: SetNull)
-  title              String
-  summary            String?
-  isCurrent          Boolean        @default(false)
-  status             String         @default("LOCKED")
-  progressPercentage Int            @default(0)
-  order              Int
+model LessonProgress {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId           String
+  lesson             Lesson    @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  moduleId           String
+  module             Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  courseId           String
+  course             Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status             String    @default("IN_PROGRESS") // NOT_STARTED, IN_PROGRESS, COMPLETED
+  progressPercentage Int       @default(0)
+  timeSpentMinutes   Int       @default(0)
+  firstOpenedAt      DateTime  @default(now())
+  lastOpenedAt       DateTime  @default(now())
+  completedAt        DateTime?
+
+  @@unique([userId, lessonId])
+  @@index([userId, moduleId])
+  @@index([userId, courseId])
 }
 
-model Lesson {
-  id              String   @id @default(uuid())
-  moduleId        String
-  module          Module   @relation(fields: [moduleId], references: [id], onDelete: Cascade)
-  title           String
-  type            String   @default("VIDEO")
-  content         String
-  codeSnippet     String?
-  durationMinutes Int      @default(15)
-  order           Int
+model ModuleProgress {
+  id                 String    @id @default(uuid())
+  userId             String
+  user               User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  moduleId           String
+  module             Module    @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  courseId           String
+  course             Course    @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  status             String    @default("IN_PROGRESS")
+  progressPercentage Int       @default(0)
+  completedLessons   Int       @default(0)
+  totalLessons       Int       @default(5)
+  startedAt          DateTime  @default(now())
+  completedAt        DateTime?
+  lastAccessedAt     DateTime  @default(now())
+
+  @@unique([userId, moduleId])
 }
 
 model UserProgress {
@@ -147,16 +174,155 @@ model UserProgress {
   @@unique([userId, moduleId])
 }
 
-model DailyFocusTask {
+model LearningSession {
   id              String   @id @default(uuid())
   userId          String
   user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  courseId        String?
+  course          Course?  @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  lessonId        String?
+  lesson          Lesson?  @relation(fields: [lessonId], references: [id], onDelete: SetNull)
+  activityType    String   @default("LESSON_STUDY")
+  durationMinutes Float    @default(15)
+  startedAt       DateTime @default(now())
+  endedAt         DateTime @default(now())
+
+  @@index([userId, startedAt])
+}
+
+model LearningPath {
+  id                  String          @id @default(uuid())
+  userId              String
+  user                User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  version             Int             @default(1)
+  title               String          @default("Frontend Engineering Path")
+  description         String
+  targetRole          String
+  totalProgress       Int             @default(0)
+  totalHoursEstimated Int             @default(90)
+  totalHoursInvested  Float           @default(0.0)
+  currentFocus        String          @default("Core Foundations")
+  currentPhaseIndex   Int             @default(1)
+  status              String          @default("ACTIVE")
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  phases              LearningPhase[]
+
+  @@index([userId])
+}
+
+model LearningPhase {
+  id             String         @id @default(uuid())
+  learningPathId String
+  learningPath   LearningPath   @relation(fields: [learningPathId], references: [id], onDelete: Cascade)
+  phaseNumber    Int
+  title          String
+  description    String?
+  estimatedHours Int
+  status         String         @default("LOCKED")
+  iconType       String         @default("book")
+  order          Int
+
+  modules        PhaseModule[]
+
+  @@index([learningPathId])
+}
+
+model PhaseModule {
+  id                 String         @id @default(uuid())
+  phaseId            String
+  phase              LearningPhase  @relation(fields: [phaseId], references: [id], onDelete: Cascade)
+  moduleId           String?
+  module             Module?        @relation(fields: [moduleId], references: [id], onDelete: SetNull)
+  title              String
+  summary            String?
+  isCurrent          Boolean        @default(false)
+  status             String         @default("LOCKED")
+  progressPercentage Int            @default(0)
+  order              Int
+
+  @@index([phaseId])
+}
+
+model Course {
+  id               String             @id @default(uuid())
+  title            String
+  slug             String             @unique
+  description      String
+  category         String
+  difficulty       String             @default("Intermediate")
+  durationMinutes  Int                @default(180)
+  icon             String?
+  coverImage       String?
+  isFeatured       Boolean            @default(false)
+  isRecommended    Boolean            @default(false)
+  createdAt        DateTime           @default(now())
+
+  modules          Module[]
+  enrollments      CourseEnrollment[]
+  lessonProgresses LessonProgress[]
+  moduleProgresses ModuleProgress[]
+  learningSessions LearningSession[]
+  quizAttempts     QuizAttempt[]
+  recommendations  Recommendation[]
+
+  @@index([slug])
+  @@index([category])
+}
+
+model Module {
+  id               String           @id @default(uuid())
+  courseId         String
+  course           Course           @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  title            String
+  description      String
+  order            Int
+  estimatedMinutes Int              @default(60)
+  totalLessons     Int              @default(5)
+
+  lessons          Lesson[]
+  phaseModules     PhaseModule[]
+  moduleProgresses ModuleProgress[]
+  lessonProgresses LessonProgress[]
+  userProgress     UserProgress[]
+
+  @@index([courseId])
+}
+
+model Lesson {
+  id               String            @id @default(uuid())
+  moduleId         String
+  module           Module            @relation(fields: [moduleId], references: [id], onDelete: Cascade)
+  title            String
+  type             String            @default("VIDEO") // VIDEO, READING, QUIZ, CODING
+  content          String
+  codeSnippet      String?
+  durationMinutes  Int               @default(15)
+  order            Int
+
+  progresses       LessonProgress[]
+  learningSessions LearningSession[]
+  quizAttempts     QuizAttempt[]
+
+  @@index([moduleId])
+}
+
+model DailyFocusTask {
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title           String
   typeLabel       String
   durationMinutes Int
-  isCompleted     Boolean  @default(false)
-  order           Int      @default(0)
+  isCompleted     Boolean   @default(false)
+  completedAt     DateTime?
+  order           Int       @default(0)
   scheduledDate   String
+  relatedCourseId String?
+  relatedSkillId  String?
+
+  @@index([userId, scheduledDate])
 }
 
 model SkillCategory {
@@ -168,14 +334,17 @@ model SkillCategory {
 }
 
 model Skill {
-  id          String        @id @default(uuid())
+  id          String         @id @default(uuid())
   categoryId  String
-  category    SkillCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  category    SkillCategory  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
   name        String
-  slug        String        @unique
+  slug        String         @unique
   description String?
 
-  userSkills  UserSkill[]
+  userSkills   UserSkill[]
+  skillHistory SkillHistory[]
+
+  @@index([slug])
 }
 
 model UserSkill {
@@ -190,18 +359,41 @@ model UserSkill {
   lastEvaluatedAt  DateTime @default(now())
 
   @@unique([userId, skillId])
+  @@index([userId])
+}
+
+model SkillHistory {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  skillId          String
+  skill            Skill    @relation(fields: [skillId], references: [id], onDelete: Cascade)
+  proficiencyScore Int
+  source           String   @default("ASSESSMENT") // ASSESSMENT, QUIZ, LESSON, CHALLENGE
+  recordedAt       DateTime @default(now())
+
+  @@index([userId, skillId, recordedAt])
+  @@index([userId, recordedAt])
 }
 
 model SkillGap {
-  id                     String  @id @default(uuid())
+  id                     String    @id @default(uuid())
   userId                 String
-  user                   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user                   User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   skillName              String
-  severity               String
+  currentScore           Int       @default(45)
+  targetScore            Int       @default(80)
+  priority               String    @default("MODERATE") // CRITICAL, MODERATE, LOW
+  status                 String    @default("OPEN")     // OPEN, IMPROVING, RESOLVED
+  severity               String    @default("Moderate")
   description            String
-  targetLevel            String  @default("Advanced")
+  targetLevel            String    @default("Advanced")
   recommendedCourseTitle String?
   recommendedCourseId    String?
+  detectedAt             DateTime  @default(now())
+  resolvedAt             DateTime?
+
+  @@index([userId, status])
 }
 
 model Assessment {
@@ -219,6 +411,46 @@ model Assessment {
   createdAt         DateTime               @default(now())
 
   submissions       AssessmentSubmission[]
+  attempts          AssessmentAttempt[]
+
+  @@index([userId])
+}
+
+model AssessmentAttempt {
+  id           String     @id @default(uuid())
+  userId       String
+  user         User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  assessmentId String
+  assessment   Assessment @relation(fields: [assessmentId], references: [id], onDelete: Cascade)
+  score        Int
+  maxScore     Int        @default(100)
+  percentage   Int
+  passed       Boolean    @default(true)
+  answers      String?    // JSON string of submitted answers
+  skillResults String?    // JSON string of skill diagnostic breakdown
+  startedAt    DateTime   @default(now())
+  submittedAt  DateTime   @default(now())
+
+  @@index([userId, submittedAt])
+}
+
+model QuizAttempt {
+  id               String   @id @default(uuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  lessonId         String
+  lesson           Lesson   @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+  courseId         String
+  course           Course   @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  score            Int
+  maxScore         Int      @default(100)
+  percentage       Int
+  answers          String?  // JSON string
+  attemptNumber    Int      @default(1)
+  timeTakenMinutes Float    @default(5)
+  submittedAt      DateTime @default(now())
+
+  @@index([userId, lessonId])
 }
 
 model AssessmentQuestion {
@@ -231,6 +463,8 @@ model AssessmentQuestion {
   explanation        String
   skillTested        String
   difficulty         String  @default("Intermediate")
+
+  @@index([category])
 }
 
 model AssessmentSubmission {
@@ -240,6 +474,8 @@ model AssessmentSubmission {
   questionId          String
   selectedOptionIndex Int
   isCorrect           Boolean
+
+  @@index([assessmentId])
 }
 
 model Conversation {
@@ -253,6 +489,8 @@ model Conversation {
   updatedAt DateTime      @updatedAt
 
   messages  ChatMessage[]
+
+  @@index([userId, updatedAt])
 }
 
 model ChatMessage {
@@ -261,7 +499,10 @@ model ChatMessage {
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
   role           String
   content        String
+  tokensUsed     Int?
   createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
 }
 
 model Recommendation {
@@ -273,18 +514,26 @@ model Recommendation {
   title       String
   reason      String
   tags        String?
+  status      String   @default("SHOWN") // SHOWN, CLICKED, ACCEPTED, STARTED, COMPLETED, DISMISSED
   isDismissed Boolean  @default(false)
   createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId, isDismissed])
 }
 
 model Notification {
-  id        String   @id @default(uuid())
+  id        String    @id @default(uuid())
   userId    String
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
   title     String
   message   String
-  type      String   @default("INFO")
-  isRead    Boolean  @default(false)
+  type      String    @default("INFO")
+  isRead    Boolean   @default(false)
   linkUrl   String?
-  createdAt DateTime @default(now())
+  createdAt DateTime  @default(now())
+  readAt    DateTime?
+
+  @@index([userId, isRead])
+  @@index([userId, createdAt])
 }

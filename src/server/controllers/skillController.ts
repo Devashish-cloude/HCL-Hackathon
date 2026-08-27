@@ -46,6 +46,7 @@ export const getSkillAnalysis = async (req: AuthRequest, res: Response) => {
           orderBy: { proficiencyScore: 'desc' },
         },
         skillGaps: true,
+        assessments: true,
       },
     });
 
@@ -55,7 +56,7 @@ export const getSkillAnalysis = async (req: AuthRequest, res: Response) => {
 
     const completedTasksCount = user.focusTasks.filter((t) => t.isCompleted).length;
     const completedProgressCount = user.progress.filter((p) => p.isCompleted).length;
-    const totalUnits = completedTasksCount + completedProgressCount;
+    const totalUnits = completedTasksCount + completedProgressCount + user.assessments.length;
 
     const overallProficiency = Math.min(100, Math.round(totalUnits * 20));
 
@@ -123,7 +124,7 @@ export const getSkillAnalysis = async (req: AuthRequest, res: Response) => {
       courseSlug: recommendedCourseSlug,
     };
 
-    const gapAreas = [
+    const gapAreas = user.skillGaps.length > 0 ? user.skillGaps : [
       {
         id: `gap-${user.id}-1`,
         skillName: competencies.find((c) => c.status === 'NEEDS_PRACTICE')?.name || template[0].name,
@@ -144,6 +145,49 @@ export const getSkillAnalysis = async (req: AuthRequest, res: Response) => {
         recommendedNextStep,
         gapAreas,
       },
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getSkillHistory = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const history = await prisma.skillHistory.findMany({
+      where: { userId },
+      include: { skill: true },
+      orderBy: { recordedAt: 'asc' },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: history,
+    });
+  } catch (error: any) {
+    return res.status(500).json({ success: false, message: error.message });
+  }
+};
+
+export const getSkillGaps = async (req: AuthRequest, res: Response) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ success: false, message: 'Unauthorized' });
+    }
+
+    const gaps = await prisma.skillGap.findMany({
+      where: { userId },
+      orderBy: { detectedAt: 'desc' },
+    });
+
+    return res.status(200).json({
+      success: true,
+      data: gaps,
     });
   } catch (error: any) {
     return res.status(500).json({ success: false, message: error.message });

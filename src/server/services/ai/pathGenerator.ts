@@ -1,4 +1,5 @@
 import { prisma } from '../prismaClient.js';
+import { ActivityService } from '../activityService.js';
 
 export class PathGenerator {
   public static async generatePersonalizedPath(
@@ -122,6 +123,14 @@ export class PathGenerator {
           include: { modules: true },
         },
       },
+    });
+
+    await ActivityService.logActivity({
+      userId,
+      activityType: 'LEARNING_PATH_CREATED',
+      entityType: 'User',
+      entityId: learningPath.id,
+      metadata: { targetRole, pathTitle, experienceLevel },
     });
 
     return learningPath;

@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import { prisma } from '../services/prismaClient.js';
 import { AuthRequest } from '../middleware/authMiddleware.js';
+import { ActivityService } from '../services/activityService.js';
 
 export const getPreferences = async (req: AuthRequest, res: Response) => {
   try {
@@ -16,6 +17,7 @@ export const getPreferences = async (req: AuthRequest, res: Response) => {
         targetRole: true,
         experienceLevel: true,
         dailyGoalMinutes: true,
+        onboardingCompleted: true,
       },
     });
 
@@ -41,6 +43,8 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
 
     const { theme, targetRole, experienceLevel, dailyGoalMinutes } = req.body;
 
+    const previousUser = await prisma.user.findUnique({ where: { id: userId }, select: { theme: true } });
+
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
@@ -48,6 +52,7 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
         ...(targetRole && { targetRole }),
         ...(experienceLevel && { experienceLevel }),
         ...(dailyGoalMinutes !== undefined && { dailyGoalMinutes: Number(dailyGoalMinutes) }),
+        lastActiveAt: new Date(),
       },
       select: {
         id: true,
@@ -57,6 +62,16 @@ export const updatePreferences = async (req: AuthRequest, res: Response) => {
         dailyGoalMinutes: true,
       },
     });
+
+    if (theme && previousUser?.theme !== theme) {
+      await ActivityService.logActivity({
+        userId,
+        activityType: 'THEME_CHANGED',
+        entityType: 'User',
+        entityId: userId,
+        metadata: { from: previousUser?.theme, to: theme },
+      });
+    }
 
     return res.status(200).json({
       success: true,
@@ -75,7 +90,7 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
       return res.status(401).json({ success: false, message: 'Unauthorized' });
     }
 
-    const { name, headline, bio, avatarUrl } = req.body;
+    const { name, headline, bio, avatarUrl, targetRole, experienceLevel, onboardingCompleted } = req.body;
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
@@ -84,6 +99,10 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         ...(headline && { headline }),
         ...(bio !== undefined && { bio }),
         ...(avatarUrl !== undefined && { avatarUrl }),
+        ...(targetRole && { targetRole }),
+        ...(experienceLevel && { experienceLevel }),
+        ...(onboardingCompleted !== undefined && { onboardingCompleted }),
+        lastActiveAt: new Date(),
       },
       select: {
         id: true,
@@ -93,8 +112,18 @@ export const updateProfile = async (req: AuthRequest, res: Response) => {
         bio: true,
         avatarUrl: true,
         targetRole: true,
+        experienceLevel: true,
         theme: true,
+        onboardingCompleted: true,
       },
+    });
+
+    await ActivityService.logActivity({
+      userId,
+      activityType: 'PROFILE_UPDATED',
+      entityType: 'User',
+      entityId: userId,
+      metadata: { targetRole: updatedUser.targetRole, headline: updatedUser.headline },
     });
 
     return res.status(200).json({

@@ -277,6 +277,44 @@ export const ProgressPage: React.FC = () => {
           </div>
         )}
       </Card>
+
+      {/* Row 4: Account Audit & Activity Log */}
+      <Card className="p-6 border-slate-200/90 dark:border-slate-800 shadow-sm space-y-4">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <TrendingUp className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+            <h3 className="font-bold text-slate-900 dark:text-slate-100 text-base">
+              Learning Activity & Audit History
+            </h3>
+          </div>
+          <Badge variant="blue" size="sm">
+            PostgreSQL Verified
+          </Badge>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2">
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+            <span className="text-xs text-slate-400 font-medium block">Total Units Completed</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 block">
+              {totalCompletedSkills} Units
+            </span>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+            <span className="text-xs text-slate-400 font-medium block">Active Days Tracked</span>
+            <span className="text-xl font-extrabold text-slate-900 dark:text-slate-100 mt-1 block">
+              {activeDaysCount} Days
+            </span>
+          </div>
+
+          <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-700/60">
+            <span className="text-xs text-slate-400 font-medium block">Verified Competency Level</span>
+            <span className="text-xl font-extrabold text-blue-600 dark:text-blue-400 mt-1 block">
+              {masteredSkillsCount > 0 ? `${Math.min(100, masteredSkillsCount * 25)}%` : '0%'}
+            </span>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 };

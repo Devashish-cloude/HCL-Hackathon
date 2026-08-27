@@ -10,6 +10,8 @@ import assessmentRoutes from './assessmentRoutes.js';
 import recommendationRoutes from './recommendationRoutes.js';
 import conversationRoutes from './conversationRoutes.js';
 import aiChatRoutes from './aiChatRoutes.js';
+import activityRoutes from './activityRoutes.js';
+import notificationRoutes from './notificationRoutes.js';
 
 const apiRouter = Router();
 
@@ -24,6 +26,8 @@ apiRouter.use('/assessments', assessmentRoutes);
 apiRouter.use('/recommendations', recommendationRoutes);
 apiRouter.use('/conversations', conversationRoutes);
 apiRouter.use('/ai/chat', aiChatRoutes);
+apiRouter.use('/activity', activityRoutes);
+apiRouter.use('/notifications', notificationRoutes);
 
 // Health check route
 apiRouter.get('/health', (req, res) => {

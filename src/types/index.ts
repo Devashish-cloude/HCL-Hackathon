@@ -68,6 +68,13 @@ export interface DashboardData {
       slug: string;
     };
   };
+  recentActivities?: {
+    id: string;
+    activityType: string;
+    title: string;
+    timeGroup: string;
+    createdAt: string;
+  }[];
 }
 
 export interface PhaseModule {
