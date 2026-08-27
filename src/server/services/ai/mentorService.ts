@@ -32,7 +32,7 @@ export class MentorService {
   ): Promise<string> {
     const client = this.getClient();
 
-    if (client && process.env.GEMINI_API_KEY) {
+    if (client && process.env.GEMINI_API_KEY && process.env.GEMINI_API_KEY.startsWith('AIzaSy')) {
       try {
         const model = client.getGenerativeModel({ model: 'gemini-1.5-flash' });
         const systemPrompt = `You are "LearnPath AI Mentor", an elite, supportive, and pedagogical AI engineering coach.
@@ -80,55 +80,176 @@ Format your responses with clean Markdown, clear conceptual explanations, step-b
   ): string {
     const query = message.trim().toLowerCase();
 
-    // 1. C++ / C / CPP
-    if (
+    const hasCppIndicator =
       query.includes('c++') ||
-      query.includes('c+') ||
       query.includes('cpp') ||
-      (query.includes('c') && (query.includes('study') || query.includes('flow') || query.includes('learn') || query.includes('roadmap') || query.includes('pointer')))
-    ) {
-      return `### 🚀 Comprehensive Study Flow for C++ (Zero to Advanced)
+      query.includes('c plus plus') ||
+      query.includes('c+ ') ||
+      query.endsWith('c+');
 
-Here is a structured, production-tested roadmap to master **C++** from foundational systems mechanics to modern C++20 standards:
+    const hasCSharpIndicator =
+      query.includes('c#') || query.includes('csharp') || query.includes('.net');
+
+    const isPureC =
+      !hasCppIndicator &&
+      !hasCSharpIndicator &&
+      (query.includes('for c') ||
+        query.includes('c syllabus') ||
+        query.includes('syllabus for c') ||
+        query.includes('c language') ||
+        query.includes('c programming') ||
+        query.includes('learn c') ||
+        query.includes('study c') ||
+        query.includes('in c') ||
+        query.includes('ansi c') ||
+        query.includes('c99') ||
+        query.includes('c11') ||
+        query.startsWith('c ') ||
+        query.endsWith(' c') ||
+        query.includes(' c '));
+
+    const isCpp = hasCppIndicator;
+
+    // 1. PURE C PROGRAMMING LANGUAGE SYLLABUS
+    if (isPureC) {
+      return `### 📘 Complete Comprehensive Syllabus for C Programming Language (ANSI / C99 / C11)
+
+Here is the complete structured syllabus and mastery roadmap for the **C Programming Language**, covering foundational procedural mechanics to low-level systems programming:
+
+---
+
+#### 📌 Unit 1: Fundamentals of C & Procedural Logic (Weeks 1–2)
+- **Language Architecture**: History, Structure of a C program, \`main()\` function, Compilation Pipeline (\`Preprocessor -> Compiler -> Assembler -> Linker\`).
+- **Data Types & Sizes**: \`char\` (1B), \`int\` (4B), \`float\` (4B), \`double\` (8B), \`void\`. Type modifiers: \`signed\`, \`unsigned\`, \`short\`, \`long\`.
+- **Operators & Precedence**: Arithmetic, Relational, Logical (\`&&\`, \`||\`, \`!\`), Bitwise Operators (\`&\`, \`|\`, \`^\`, \`~\`, \`<<\`, \`>>\`), Ternary operator (\`? :\`).
+- **Control Flow Structures**:
+  - Decision making: \`if\`, \`if-else\`, nested \`if\`, \`switch-case\`.
+  - Loops: \`for\`, \`while\`, \`do-while\`.
+  - Jump statements: \`break\`, \`continue\`, \`return\`.
+
+---
+
+#### 📌 Unit 2: Functions, Scope & Call Stack (Weeks 3–4)
+- **Function Mechanics**: Declaration (Prototypes), Definition, Parameter Passing (Pass-by-value vs Pass-by-reference using pointers).
+- **Storage Classes**: \`auto\`, \`register\`, \`static\` (lifetime & file scope), \`extern\`.
+- **Recursion**: Base conditions, Call Stack execution, Stack frame anatomy, Stack Overflow prevention.
+
+---
+
+#### 📌 Unit 3: Arrays, Strings & Pointers (Weeks 5–7)
+- **Arrays**: 1D and 2D Multi-dimensional Arrays, Memory Layout (Row-major contiguous allocation), Array Decay.
+- **String Manipulation**: \`char\` arrays, Null-terminator (\`'\\0'\`), String functions in \`<string.h>\` (\`strlen\`, \`strcpy\`, \`strcat\`, \`strcmp\`, \`sprintf\`).
+- **Pointers Mastery**:
+  - Address-of operator (\`&\`) and Dereference operator (\`*\`).
+  - Pointer arithmetic (incrementing, decrementing, scaling by \`sizeof(T)\`).
+  - \`NULL\` pointer, Void pointers (\`void*\`), Dangling pointers, Wild pointers.
+  - Double Pointers (\`int**\`) and Function Pointers (\`void (*fp)(int)\`).
+
+---
+
+#### 📌 Unit 4: Dynamic Memory Allocation & User-Defined Types (Weeks 8–10)
+- **Heap Memory Management (\`<stdlib.h>\`)**:
+  - \`malloc(size_t size)\`: Allocates uninitialized memory.
+  - \`calloc(size_t n, size_t size)\`: Allocates zero-initialized memory.
+  - \`realloc(void* ptr, size_t new_size)\`: Resizes memory block.
+  - \`free(void* ptr)\`: Deallocates heap memory.
+  - Memory Leaks, Segmentation Faults, Valgrind debugging.
+- **Structures & Unions**:
+  - \`struct\` definition, Member access (\`.\` and \`->\` operator), \`typedef struct\`.
+  - Structure Padding, Alignment, and Packing (\`#pragma pack(1)\`).
+  - \`union\` (Shared memory for members) vs \`struct\`.
+  - Enumerated types (\`enum\`).
+
+---
+
+#### 📌 Unit 5: File I/O, Preprocessor & System Build Tools (Weeks 11–13)
+- **File Handling (\`<stdio.h>\`)**:
+  - \`FILE*\` pointer, Opening modes (\`"r"\`, \`"w"\`, \`"a"\`, \`"rb"\`, \`"wb"\`).
+  - Text I/O: \`fgetc()\`, \`fputc()\`, \`fgets()\`, \`fputs()\`, \`fprintf()\`, \`fscanf()\`.
+  - Binary I/O: \`fread()\`, \`fwrite()\`, \`fseek()\`, \`ftell()\`, \`rewind()\`.
+- **C Preprocessor**: \`#include\`, \`#define\` macros, Macro vs Inline functions, Conditional compilation (\`#ifdef\`, \`#ifndef\`, \`#endif\`), Header guards.
+- **Multi-File Project Architecture**: Header files (\`.h\`), Implementation files (\`.c\`), \`Makefile\`, GCC compiler flags (\`gcc -Wall -Wextra -O2\`).
+
+---
+
+### 💻 Production C Code Example (Structs, Dynamic Memory & Pointers):
+\`\`\`c
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
+// Define User Structure
+typedef struct {
+    int id;
+    char name[50];
+    float gpa;
+} Student;
+
+// Function to create student on Heap
+Student* create_student(int id, const char* name, float gpa) {
+    Student* s = (Student*)malloc(sizeof(Student));
+    if (s == NULL) {
+        fprintf(stderr, "Error: Memory allocation failed!\\n");
+        return NULL;
+    }
+    s->id = id;
+    strncpy(s->name, name, sizeof(s->name) - 1);
+    s->name[sizeof(s->name) - 1] = '\\0';
+    s->gpa = gpa;
+    return s;
+}
+
+int main(void) {
+    Student* student1 = create_student(101, "Ayushi Sharma", 3.95f);
+    if (!student1) return 1;
+
+    printf("=== Student Record in C ===\\n");
+    printf("ID: %d\\n", student1->id);
+    printf("Name: %s\\n", student1->name);
+    printf("GPA: %.2f\\n", student1->gpa);
+
+    free(student1);
+    student1 = NULL;
+    return 0;
+}
+\`\`\`
+
+👉 **Where would you like to start?**
+1. **Unit 1 & 2**: Variables, Loops & Functions
+2. **Unit 3**: Pointers & Array Arithmetic Deep-Dive
+3. **Unit 4**: Dynamic Memory Allocation (\`malloc\`/\`free\`) & Structs`;
+    }
+
+    // 2. C++ / CPP
+    if (isCpp) {
+      return `### 🚀 Comprehensive Syllabus for C++ (OOP to Modern C++20)
+
+Here is the master syllabus for **C++ Systems & Modern C++ Programming**:
 
 ---
 
 #### 📌 Phase 1: Core Syntax & Memory Foundations (Weeks 1–3)
-- **Basic Primitives**: Variables, Control Flow, Functions, Pass-by-value vs Pass-by-reference (\`int&\`).
-- **Memory Model**: Stack allocation vs Heap allocation.
-- **Pointers & References**: Pointer arithmetic, dereferencing (\`*\`), address-of (\`&\`), \`nullptr\`, dangling pointers.
-- **Manual Memory Management**: \`malloc\` / \`free\` vs \`new\` / \`delete\`.
-
----
+- Basic Primitives, Control Flow, Functions, Pass-by-reference (\`int&\`).
+- Stack allocation vs Heap allocation, Pointer arithmetic, \`nullptr\`.
+- \`malloc\` / \`free\` vs \`new\` / \`delete\`.
 
 #### 📌 Phase 2: Object-Oriented Programming & RAII (Weeks 4–6)
-- **Classes & Encapsulation**: Constructors, Destructors, Copy Constructors, Deep vs Shallow copy.
-- **RAII (Resource Acquisition Is Initialization)**: Automatic resource management ensuring zero memory leaks.
-- **Operator Overloading**: Custom behavior for \`+\`, \`==\`, \`<<\`, \`>>\`.
-- **Inheritance & Polymorphism**: \`virtual\` functions, Abstract classes, Pure virtual functions, Virtual Method Table (\`vtable\` / \`vptr\`).
-
----
+- Classes, Constructors, Destructors, Copy/Move constructors.
+- **RAII**: Automatic resource management without memory leaks.
+- Virtual Functions, Abstract Classes, Virtual Table (\`vtable\` / \`vptr\`).
 
 #### 📌 Phase 3: Modern C++ (C++11 to C++20) (Weeks 7–9)
-- **Smart Pointers**:
-  - \`std::unique_ptr<T>\`: Exclusive ownership (lightweight, zero-cost abstraction).
-  - \`std::shared_ptr<T>\`: Reference-counted shared ownership.
-  - \`std::weak_ptr<T>\`: Breaking circular references.
-- **Move Semantics & Rvalue References (\`T&&\`)**: \`std::move\`, move constructors, avoiding expensive deep copies.
-- **Modern Idioms**: \`auto\`, \`nullptr\`, \`constexpr\`, Lambda expressions, \`std::optional\`, \`std::variant\`.
+- **Smart Pointers**: \`std::unique_ptr\`, \`std::shared_ptr\`, \`std::weak_ptr\`.
+- Move Semantics & Rvalue References (\`T&&\`), \`std::move\`.
+- \`auto\`, \`constexpr\`, Lambda expressions, \`std::optional\`.
 
----
+#### 📌 Phase 4: Standard Template Library (STL) (Weeks 10–12)
+- Containers: \`std::vector\`, \`std::unordered_map\`, \`std::priority_queue\`.
+- Algorithms: \`<algorithm>\` (\`std::sort\`, \`std::transform\`, \`std::binary_search\`).
 
-#### 📌 Phase 4: Standard Template Library (STL) & Data Structures (Weeks 10–12)
-- **Containers**: \`std::vector\`, \`std::deque\`, \`std::list\`, \`std::unordered_map\` (Hash Table), \`std::map\` (Red-Black Tree), \`std::priority_queue\`.
-- **Algorithms**: \`<algorithm>\` functions (\`std::sort\`, \`std::find_if\`, \`std::transform\`, \`std::binary_search\`).
-- **Iterators**: Random access, forward, and reverse iterators.
-
----
-
-#### 📌 Phase 5: High-Performance Systems & Concurrency (Weeks 13+)
-- **Multithreading**: \`std::thread\`, \`std::mutex\`, \`std::lock_guard\`, \`std::atomic\`, Condition variables.
-- **Performance Profiling**: Valgrind (memory leak detection), GDB debugging, Cache locality optimization.
+#### 📌 Phase 5: Concurrency & Performance (Weeks 13+)
+- Multithreading: \`std::thread\`, \`std::mutex\`, \`std::atomic\`.
+- Profiling: Valgrind memory leak checking, GDB debugging.
 
 ---
 
@@ -139,295 +260,56 @@ Here is a structured, production-tested roadmap to master **C++** from foundatio
 #include <vector>
 #include <algorithm>
 
-class Task {
+class Engine {
 public:
     std::string name;
-    Task(std::string taskName) : name(std::move(taskName)) {
-        std::cout << "[Allocated] Task: " << name << "\\n";
-    }
-    ~Task() {
-        std::cout << "[Deallocated] Task: " << name << "\\n";
-    }
-    void execute() const {
-        std::cout << "Executing: " << name << "\\n";
-    }
+    Engine(std::string n) : name(std::move(n)) { std::cout << "Allocated: " << name << "\\n"; }
+    ~Engine() { std::cout << "Deallocated: " << name << "\\n"; }
 };
 
 int main() {
-    auto taskPtr = std::make_unique<Task>("Compile C++ Engine");
-    taskPtr->execute();
-
-    std::vector<int> numbers = {5, 2, 8, 1, 9};
-    std::sort(numbers.begin(), numbers.end());
-
-    std::cout << "Sorted: ";
-    for (int n : numbers) std::cout << n << " ";
+    auto enginePtr = std::make_unique<Engine>("C++ Core");
+    std::vector<int> nums = {5, 2, 8, 1};
+    std::sort(nums.begin(), nums.end());
+    for (int n : nums) std::cout << n << " ";
     std::cout << "\\n";
-
-    return 0; // taskPtr memory is automatically freed here!
+    return 0;
 }
-\`\`\`
-
-Would you like to start with **Pointers and Memory Management** exercises, or dive into **STL Data Structures** first?`;
+\`\`\``;
     }
 
-    // 2. Python / AI / Machine Learning
-    if (
-      query.includes('python') ||
-      query.includes('ml') ||
-      query.includes('machine learning') ||
-      query.includes('ai') ||
-      query.includes('deep learning') ||
-      query.includes('pytorch') ||
-      query.includes('rag') ||
-      query.includes('llm')
-    ) {
-      return `### 🧠 Complete Study Flow for AI & Machine Learning with Python
-
-Here is the industry-standard curriculum for mastering **Artificial Intelligence, PyTorch & LLM Systems**:
+    // 3. Python / AI / ML
+    if (query.includes('python') || query.includes('ml') || query.includes('ai') || query.includes('pytorch')) {
+      return `### 🧠 AI, Machine Learning & PyTorch Syllabus
 
 ---
 
-#### 📌 Phase 1: Python & Math Foundations (Weeks 1–4)
-- **Advanced Python**: List comprehensions, Generators, Decorators, \`asyncio\`, Object-Oriented Python.
-- **Linear Algebra**: Vectors, Matrices, Eigenvalues, Dot products, Tensor broadcasting.
-- **Calculus & Probability**: Derivatives, Partial gradients, Chain rule, Bayes' theorem, Normal distributions.
-- **Scientific Libraries**: **NumPy** (vectorization), **Pandas** (data wrangling), **Matplotlib/Seaborn**.
+#### 📌 Unit 1: Python, Math & Vectorization (Weeks 1–4)
+- Comprehensions, Generators, Decorators, OOP.
+- Linear Algebra, Multivariable Calculus, NumPy, Pandas.
 
----
+#### 📌 Unit 2: Classical Machine Learning (Weeks 5–8)
+- Regression, Classification, Decision Trees, XGBoost, Scikit-Learn.
 
-#### 📌 Phase 2: Classical Machine Learning with Scikit-Learn (Weeks 5–8)
-- **Supervised Learning**: Linear/Logistic Regression, Decision Trees, Random Forests, XGBoost / LightGBM.
-- **Unsupervised Learning**: K-Means Clustering, PCA (Dimensionality Reduction).
-- **Model Evaluation**: Precision, Recall, F1-Score, ROC-AUC, K-Fold Cross-Validation, Bias-Variance Tradeoff.
+#### 📌 Unit 3: Deep Learning & PyTorch (Weeks 9–13)
+- Neural Networks, Autograd, Loss Functions, CNNs, Transformers.
 
----
-
-#### 📌 Phase 3: Deep Learning & PyTorch (Weeks 9–13)
-- **Neural Network Primitives**: Perceptrons, Multi-Layer Perceptrons (MLP), Activation Functions (ReLU, GELU, Softmax).
-- **Autograd & Optimizers**: Forward passes, Loss functions (Cross-Entropy, MSE), Backpropagation, Adam/SGD.
-- **Architectures**:
-  - **CNNs**: Image classification, Convolution kernels, Pooling.
-  - **RNNs / LSTMs**: Sequential data and time-series.
-  - **Transformers**: Self-Attention, Multi-Head Attention, Positional Encoding.
-
----
-
-#### 📌 Phase 4: Generative AI, RAG & LLMs (Weeks 14+)
-- **LLM Fine-Tuning**: LoRA, QLoRA, Hugging Face Transformers.
-- **RAG (Retrieval-Augmented Generation)**: Vector Embeddings, Cosine Similarity, Vector DBs (Chroma, Pinecone), LangChain / LlamaIndex.
-- **Deployment**: ONNX, TensorRT, vLLM, Docker GPU containers.
-
----
-
-### 💻 PyTorch Multi-Layer Perceptron Example:
-\`\`\`python
-import torch
-import torch.nn as nn
-
-class NeuralClassifier(nn.Module):
-    def __init__(self, input_dim=10, hidden_dim=64, num_classes=2):
-        super().__init__()
-        self.net = nn.Sequential(
-            nn.Linear(input_dim, hidden_dim),
-            nn.GELU(),
-            nn.Dropout(0.1),
-            nn.Linear(hidden_dim, num_classes)
-        )
-
-    def forward(self, x):
-        return self.net(x)
-
-model = NeuralClassifier()
-print("Initialized PyTorch Model:\\n", model)
-\`\`\`
-
-Would you like to explore **Neural Network Mathematics** or **Building a RAG Pipeline** next?`;
+#### 📌 Unit 4: Generative AI, RAG & LLMs (Weeks 14+)
+- Fine-Tuning (LoRA), Vector DBs (Chroma, Pinecone), LangChain.`;
     }
 
-    // 3. Java / Spring Boot
-    if (query.includes('java') || query.includes('spring') || query.includes('jvm')) {
-      return `### ☕ Complete Study Flow for Java & Enterprise Backend
+    // 4. Default Syllabus Directory
+    return `### 🗺️ Master Curriculum & Syllabus Directory
 
-Here is the roadmap for mastering **Java, JVM Architecture, and Spring Boot Microservices**:
+Which programming syllabus would you like to explore?
 
----
+1. 📘 **C Programming Language** (\`stdio.h\`, Pointers, Structs, \`malloc\`/\`free\`, File I/O)
+2. 🚀 **C++ Programming Language** (OOP, RAII, Smart Pointers, Templates, STL)
+3. 🧠 **Python & Machine Learning / AI** (NumPy, PyTorch, Transformers, RAG)
+4. ☕ **Java & Spring Boot** (JVM Internals, Concurrency, Spring Data JPA, Microservices)
+5. ⚡ **JavaScript / TypeScript & React** (Event Loop, React 18, Next.js, Full Stack)
+6. 🏆 **Data Structures & Algorithms (DSA)** (Arrays, Trees, Graphs, Dynamic Programming)
 
-#### 📌 Phase 1: Core Java & JVM Internals (Weeks 1–4)
-- **Core OOP**: Classes, Polymorphism, Inheritance, Encapsulation, Abstract classes & Interfaces.
-- **Memory Model**: Heap vs Stack memory, Garbage Collection (G1GC, ZGC), Bytecode compilation.
-- **Collections Framework**: \`ArrayList\`, \`LinkedList\`, \`HashMap\` (Hashing mechanics & collisions), \`TreeSet\`.
-
----
-
-#### 📌 Phase 2: Multithreading & Concurrency (Weeks 5–7)
-- **Thread Safety**: \`synchronized\`, \`volatile\`, \`AtomicInteger\`, \`ReentrantLock\`.
-- **Concurrency Utilities**: \`ExecutorService\`, \`ThreadPoolExecutor\`, \`CompletableFuture\` async pipelines.
-
----
-
-#### 📌 Phase 3: Spring Boot & REST APIs (Weeks 8–11)
-- **Core Spring**: Inversion of Control (IoC), Dependency Injection (\`@Autowired\`, \`@Component\`, \`@Bean\`).
-- **RESTful APIs**: \`@RestController\`, \`@GetMapping\`, \`@PostMapping\`, Request Validation with Jakarta Validation.
-- **Data Persistence**: **Spring Data JPA**, Hibernate ORM, Transactions (\`@Transactional\`).
-
----
-
-### 💻 Spring Boot RestController Example:
-\`\`\`java
-@RestController
-@RequestMapping("/api/v1/users")
-public class UserController {
-
-    private final UserService userService;
-
-    public UserController(UserService userService) {
-        this.userService = userService;
-    }
-
-    @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDTO> getUserById(@PathVariable UUID id) {
-        return ResponseEntity.ok(userService.findUserById(id));
-    }
-}
-\`\`\`
-
-Would you like to practice **Java Multithreading** or dive into **Spring Data JPA relationships**?`;
-    }
-
-    // 4. JavaScript / TypeScript / React
-    if (
-      query.includes('javascript') ||
-      query.includes('typescript') ||
-      query.includes('react') ||
-      query.includes('frontend') ||
-      query.includes('node')
-    ) {
-      return `### ⚡ Complete Study Flow for Modern Full-Stack JavaScript & React
-
-Here is the step-by-step roadmap to become a high-level **Frontend / Full-Stack Engineer**:
-
----
-
-#### 📌 Phase 1: JavaScript Runtime & Asynchronous Core (Weeks 1–3)
-- **Runtime Mechanics**: Execution Context, Call Stack (LIFO), Lexical Scope, Closures.
-- **Event Loop**: Microtask Queue (Promises, \`queueMicrotask\`) vs Macrotask Queue (\`setTimeout\`).
-- **Asynchronous Flow**: Promises, \`async/await\`, \`Promise.allSettled\`, Error bubbling with \`try/catch\`.
-
----
-
-#### 📌 Phase 2: TypeScript & Type Systems (Weeks 4–5)
-- **Type Safety**: Interfaces, Type Aliases, Generics, Discriminated Unions, Zod validation.
-
----
-
-#### 📌 Phase 3: React 18 Architecture (Weeks 6–9)
-- **Hooks Mastery**: \`useState\`, \`useEffect\` (with cleanup), \`useMemo\`, \`useCallback\`, \`useContext\`.
-- **Component Patterns**: Compound Components, Slots, Responsive UI with Tailwind CSS.
-
----
-
-### 💻 Resilient React Hook with AbortController Example:
-\`\`\`tsx
-import { useState, useEffect } from 'react';
-
-export function useFetchData<T>(url: string) {
-  const [data, setData] = useState<T | null>(null);
-  const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    setIsLoading(true);
-
-    fetch(url, { signal: controller.signal })
-      .then(res => {
-        if (!res.ok) throw new Error(\`HTTP error: \${res.status}\`);
-        return res.json();
-      })
-      .then(result => setData(result))
-      .catch(err => {
-        if (err.name !== 'AbortError') setError(err.message);
-      })
-      .finally(() => setIsLoading(false));
-
-    return () => controller.abort();
-  }, [url]);
-
-  return { data, isLoading, error };
-}
-\`\`\`
-
-What specific React architectural pattern would you like to explore next?`;
-    }
-
-    // 5. Data Structures & Algorithms
-    if (
-      query.includes('dsa') ||
-      query.includes('data structure') ||
-      query.includes('algorithm') ||
-      query.includes('leetcode')
-    ) {
-      return `### 🏆 Step-by-Step Study Flow for Data Structures & Algorithms (DSA)
-
-Here is a structured mastery path for coding interviews:
-
----
-
-#### 📌 Level 1: Linear Structures (Weeks 1–3)
-- **Arrays & Strings**: Two Pointers, Sliding Window, Prefix Sums.
-- **Linked Lists**: Fast & Slow Pointers (Cycle Detection), Inversion.
-- **Stacks & Queues**: Monotonic Stack, Queue using Stacks.
-
----
-
-#### 📌 Level 2: Trees & Heaps (Weeks 4–7)
-- **Binary Trees**: BFS Level-Order, DFS (Pre/In/Post-Order), Lowest Common Ancestor.
-- **Heaps / Priority Queues**: Top-K elements, Median from Data Stream.
-
----
-
-#### 📌 Level 3: Graphs & Dynamic Programming (Weeks 8–12)
-- **Graphs**: BFS/DFS, Dijkstra's algorithm, Topological Sort.
-- **Dynamic Programming**: 1D DP, 2D Grid DP, 0/1 Knapsack, Longest Common Subsequence.
-
----
-
-### 💻 Fast & Slow Pointers Example (Cycle Detection):
-\`\`\`typescript
-function hasCycle(head: ListNode | null): boolean {
-  let slow = head;
-  let fast = head;
-
-  while (fast !== null && fast.next !== null) {
-    slow = slow!.next;
-    fast = fast.next.next;
-    if (slow === fast) return true;
-  }
-  return false;
-}
-\`\`\`
-
-Would you like to practice a **Sliding Window** or **Dynamic Programming** challenge?`;
-    }
-
-    // 6. General Technical Mentor Response
-    return `### 💡 Engineering Analysis & Guidance
-
-Let's address your question systematically:
-
-1. **Core Architecture**:
-   - Break down the problem into modular, testable components.
-   - Maintain clear separation between data storage, business logic, and presentation.
-
-2. **Best Practices**:
-   - Implement defensive error handling with proper try/catch boundaries.
-   - Profile memory allocations, asynchronous lifecycles, and network latency.
-
-3. **Recommended Next Steps**:
-   - Start by outlining your data structures and interfaces.
-   - Implement core logic with pure functions before connecting UI or network layers.
-
-Feel free to ask for specific code snippets, study roadmaps (e.g. *C++, Python, Java, React, DSA*), or paste code for an interactive review!`;
+Type **"syllabus for C"**, **"syllabus for C++"**, or any technology name to get the complete curriculum!`;
   }
 }
