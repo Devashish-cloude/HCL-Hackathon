@@ -283,6 +283,35 @@ async function main() {
       durationMinutes: 240,
       isFeatured: true,
       isRecommended: true,
+      modules: {
+        create: [
+          {
+            title: 'Concurrency & Race Condition Mitigation',
+            description: 'Preventing stale closures, outdated responses, and managing request cancellation.',
+            order: 1,
+            estimatedMinutes: 60,
+            totalLessons: 2,
+            lessons: {
+              create: [
+                {
+                  title: 'Handling Async Race Conditions in Search Autocomplete',
+                  type: 'READING',
+                  durationMinutes: 30,
+                  order: 1,
+                  content: 'When users rapidly type into search inputs, earlier network requests may return AFTER later requests, overwriting newer search results. Solve this with AbortController or sequence IDs.',
+                },
+                {
+                  title: 'Implement Async Queue with Rate Limiting',
+                  type: 'CODING_CHALLENGE',
+                  durationMinutes: 30,
+                  order: 2,
+                  content: 'Create an asynchronous task queue that limits concurrency to a maximum of N parallel executions.',
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
   });
 
@@ -296,6 +325,74 @@ async function main() {
       durationMinutes: 360,
       isFeatured: true,
       isRecommended: false,
+      modules: {
+        create: [
+          {
+            title: 'Component Architecture & Props',
+            description: 'JSX semantics, pure components, props immutability, and conditional rendering.',
+            order: 1,
+            estimatedMinutes: 50,
+            totalLessons: 3,
+            lessons: {
+              create: [
+                {
+                  title: 'Declarative UI & Virtual DOM Reconciliation',
+                  type: 'VIDEO',
+                  durationMinutes: 15,
+                  order: 1,
+                  content: 'React uses a declarative programming paradigm. You describe what the UI should look like for a given state, and React handles DOM mutations using Fiber reconciliation.',
+                },
+                {
+                  title: 'Component Composition over Inheritance',
+                  type: 'READING',
+                  durationMinutes: 15,
+                  order: 2,
+                  content: 'In React, components can accept arbitrary props, including children elements and render props. Composition allows building flexible UI primitives like Modals, Cards, and Dropdowns.',
+                },
+                {
+                  title: 'Custom Generic Card Component Challenge',
+                  type: 'CODING_CHALLENGE',
+                  durationMinutes: 20,
+                  order: 3,
+                  content: 'Build a reusable TypeScript React Card component with slot support for header, footer, and variant styling.',
+                }
+              ]
+            }
+          },
+          {
+            title: 'Hooks Mastery (useState, useEffect, useMemo)',
+            description: 'Reactive state lifecycles, synchronization with external systems, and memoization.',
+            order: 2,
+            estimatedMinutes: 60,
+            totalLessons: 3,
+            lessons: {
+              create: [
+                {
+                  title: 'The Rules of Hooks & State Batching',
+                  type: 'VIDEO',
+                  durationMinutes: 20,
+                  order: 1,
+                  content: 'In React 18, automatic batching combines multiple state updates into a single render pass. Hooks must never be called conditionally.',
+                },
+                {
+                  title: 'Managing Side Effects & AbortControllers in useEffect',
+                  type: 'READING',
+                  durationMinutes: 20,
+                  order: 2,
+                  content: 'useEffect synchronizes your component with non-React widgets, network requests, or subscriptions. Always return a cleanup function to cancel requests and prevent memory leaks.',
+                },
+                {
+                  title: 'Custom useDebounce Hook Implementation',
+                  type: 'CODING_CHALLENGE',
+                  durationMinutes: 20,
+                  order: 3,
+                  content: 'Implement a type-safe useDebounce hook that delays updating a state value until after a specified delay.',
+                }
+              ]
+            }
+          }
+        ]
+      }
     }
   });
 

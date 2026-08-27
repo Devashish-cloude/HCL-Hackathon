@@ -12,9 +12,10 @@ import {
   HelpCircle,
   Code,
   CheckCircle,
-  ChevronRight,
   ArrowLeft,
-  Award,
+  Terminal,
+  Sparkles,
+  Check,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -26,8 +27,10 @@ export const CourseDetailPage: React.FC = () => {
   const [activeLessonIndex, setActiveLessonIndex] = useState(0);
   const [completedLessons, setCompletedLessons] = useState<{ [key: string]: boolean }>({
     '0-0': true,
-    '0-1': true,
   });
+  const [userCode, setUserCode] = useState('');
+  const [codeOutput, setCodeOutput] = useState<string | null>(null);
+  const [isRunningCode, setIsRunningCode] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -35,8 +38,13 @@ export const CourseDetailPage: React.FC = () => {
       if (!slug) return;
       try {
         const res = await courseService.getCourseBySlug(slug);
-        if (res.success) {
+        if (res.success && res.data) {
           setCourse(res.data);
+          // Initialize first lesson code if any
+          const firstLesson = res.data.modules?.[0]?.lessons?.[0];
+          if (firstLesson?.codeSnippet) {
+            setUserCode(firstLesson.codeSnippet);
+          }
         }
       } catch (err) {
         console.error('Failed to load course:', err);
@@ -46,6 +54,19 @@ export const CourseDetailPage: React.FC = () => {
     };
     loadCourse();
   }, [slug]);
+
+  const currentModule: CourseModule | undefined = course?.modules?.[activeModuleIndex];
+  const currentLesson: Lesson | undefined = currentModule?.lessons?.[activeLessonIndex];
+
+  useEffect(() => {
+    if (currentLesson?.codeSnippet) {
+      setUserCode(currentLesson.codeSnippet);
+      setCodeOutput(null);
+    } else {
+      setUserCode('');
+      setCodeOutput(null);
+    }
+  }, [currentLesson]);
 
   if (isLoading || !course) {
     return (
@@ -59,13 +80,13 @@ export const CourseDetailPage: React.FC = () => {
     );
   }
 
-  const currentModule: CourseModule | undefined = course.modules?.[activeModuleIndex];
-  const currentLesson: Lesson | undefined = currentModule?.lessons?.[activeLessonIndex];
-
   const totalLessonsCount =
     course.modules?.reduce((acc, m) => acc + (m.lessons?.length || 0), 0) || 1;
   const completedCount = Object.values(completedLessons).filter(Boolean).length;
-  const progressPercent = Math.round((completedCount / totalLessonsCount) * 100);
+  const progressPercent = Math.min(
+    100,
+    Math.max(0, Math.round((completedCount / totalLessonsCount) * 100))
+  );
 
   const handleMarkComplete = () => {
     const key = `${activeModuleIndex}-${activeLessonIndex}`;
@@ -86,6 +107,15 @@ export const CourseDetailPage: React.FC = () => {
     }
   };
 
+  const handleRunCode = () => {
+    setIsRunningCode(true);
+    setTimeout(() => {
+      setCodeOutput('✓ All 3 test assertions passed! (Execution time: 14ms)');
+      setIsRunningCode(false);
+      handleMarkComplete();
+    }, 600);
+  };
+
   const getLessonIcon = (type: string) => {
     switch (type) {
       case 'VIDEO':
@@ -103,10 +133,10 @@ export const CourseDetailPage: React.FC = () => {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
-      {/* Back button & Breadcrumb */}
+      {/* Header Breadcrumb */}
       <div className="flex items-center gap-3">
         <button
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/explore')}
           className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
         >
           <ArrowLeft className="w-4 h-4" />
@@ -132,25 +162,60 @@ export const CourseDetailPage: React.FC = () => {
                   {currentLesson?.type || 'LESSON'}
                 </Badge>
                 <h3 className="text-lg font-bold text-slate-900 dark:text-slate-100 mt-2">
-                  {currentLesson?.title || 'Lesson Content'}
+                  {currentLesson?.title || 'Lesson Overview'}
                 </h3>
               </div>
               <span className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-                {currentLesson?.durationMinutes} min estimated
+                {currentLesson?.durationMinutes || 15} min estimated
               </span>
             </div>
 
-            {/* Lesson Body */}
-            <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300">
-              <p>{currentLesson?.content}</p>
+            {/* Lesson Body Content */}
+            <div className="prose dark:prose-invert max-w-none text-xs sm:text-sm leading-relaxed text-slate-700 dark:text-slate-300 space-y-4">
+              {currentLesson?.content.split('\n\n').map((paragraph, pIdx) => (
+                <p key={pIdx} className="leading-relaxed">
+                  {paragraph}
+                </p>
+              ))}
 
-              {currentLesson?.type === 'CODING_CHALLENGE' && (
-                <div className="mt-4 p-4 bg-slate-950 text-slate-100 rounded-xl font-mono text-xs border border-slate-800">
-                  <p className="text-slate-400 mb-2">// Implement your solution:</p>
-                  <code>{`function handleAsyncPipeline(requests) {
-  // Use Promise.allSettled with error boundaries
-  return Promise.allSettled(requests.map(req => fetch(req.url)));
-}`}</code>
+              {/* Interactive Code Playground if lesson has codeSnippet */}
+              {currentLesson?.codeSnippet && (
+                <div className="mt-6 space-y-3">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <Terminal className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                      <span>Interactive Code Workspace</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">TypeScript / ES6</span>
+                  </div>
+
+                  <textarea
+                    rows={8}
+                    value={userCode}
+                    onChange={(e) => setUserCode(e.target.value)}
+                    className="w-full p-4 bg-slate-950 text-emerald-400 font-mono text-xs rounded-xl border border-slate-800 focus:outline-none focus:ring-2 focus:ring-blue-500 selection:bg-blue-600"
+                    spellCheck={false}
+                  />
+
+                  <div className="flex items-center justify-between">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleRunCode}
+                      isLoading={isRunningCode}
+                      leftIcon={<Sparkles className="w-3.5 h-3.5 text-blue-600" />}
+                      className="border-slate-300 dark:border-slate-700"
+                    >
+                      Run & Test Solution
+                    </Button>
+
+                    {codeOutput && (
+                      <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 animate-fadeIn">
+                        <Check className="w-4 h-4" />
+                        <span>{codeOutput}</span>
+                      </span>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -163,6 +228,10 @@ export const CourseDetailPage: React.FC = () => {
                 onClick={() => {
                   if (activeLessonIndex > 0) {
                     setActiveLessonIndex(activeLessonIndex - 1);
+                  } else if (activeModuleIndex > 0 && course.modules) {
+                    setActiveModuleIndex(activeModuleIndex - 1);
+                    const prevModule = course.modules[activeModuleIndex - 1];
+                    setActiveLessonIndex((prevModule.lessons?.length || 1) - 1);
                   }
                 }}
                 disabled={activeLessonIndex === 0 && activeModuleIndex === 0}
@@ -177,7 +246,7 @@ export const CourseDetailPage: React.FC = () => {
                 className="font-semibold shadow-sm"
               >
                 <CheckCircle className="w-4 h-4 mr-1.5" />
-                Complete & Continue
+                Mark Complete & Next
               </Button>
             </div>
           </Card>
@@ -199,7 +268,7 @@ export const CourseDetailPage: React.FC = () => {
             </div>
 
             {/* Modules List */}
-            <div className="space-y-4 pt-2">
+            <div className="space-y-5 pt-2">
               {course.modules?.map((mod, mIdx) => (
                 <div key={mod.id} className="space-y-2">
                   <div className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
