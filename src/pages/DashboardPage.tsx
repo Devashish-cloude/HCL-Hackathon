@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 
 import { useAuth } from '../contexts/AuthContext.js';
+import { getRoleCurriculum } from '../lib/roleCurricula.js';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
@@ -79,6 +80,7 @@ export const DashboardPage: React.FC = () => {
 
   const { user, heroCourse, todayFocus, roadmapTrack, stats, recommendation } = data;
   const displayName = authUser?.name || user.name || 'Learner';
+  const roleConfig = getRoleCurriculum(authUser?.targetRole || user.targetRole);
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
@@ -104,20 +106,22 @@ export const DashboardPage: React.FC = () => {
                 Featured Track
               </span>
               <h3 className="font-extrabold text-lg leading-tight tracking-tight text-white">
-                ASYNCHRONOUS JAVASCRIPT
+                {roleConfig.bannerTitle}
               </h3>
             </div>
 
             {/* Illustration Concept Graphic */}
             <div className="my-auto py-2 z-10">
               <div className="p-3 bg-white/10 backdrop-blur-md rounded-xl border border-white/15 inline-flex items-center gap-2">
-                <Clock className="w-4 h-4 text-blue-300" />
-                <span className="text-xs font-semibold text-white">Event Loop & Callbacks</span>
+                <Sparkles className="w-4 h-4 text-blue-300" />
+                <span className="text-xs font-semibold text-white truncate max-w-[200px]">
+                  {heroCourse.currentModuleTitle}
+                </span>
               </div>
             </div>
 
-            <div className="text-[10px] font-medium tracking-wider text-slate-300 z-10 uppercase">
-              PROMISES | CALLBACKS | EVENT LOOP | FETCH
+            <div className="text-[10px] font-medium tracking-wider text-slate-300 z-10 uppercase truncate">
+              {roleConfig.bannerTags}
             </div>
           </div>
 
@@ -142,15 +146,16 @@ export const DashboardPage: React.FC = () => {
               </p>
             </div>
 
-            <div className="space-y-4">
+            {/* Module Progress */}
+            <div className="space-y-3">
               <div className="space-y-1.5">
-                <div className="flex justify-between items-center text-xs font-semibold text-slate-700 dark:text-slate-300">
+                <div className="flex justify-between text-xs font-semibold text-slate-700 dark:text-slate-300">
                   <span>
                     Module {heroCourse.currentModuleNumber} of {heroCourse.totalModules}
                   </span>
                   <span>{heroCourse.progressPercentage}% Complete</span>
                 </div>
-                <ProgressBar value={heroCourse.progressPercentage} size="md" color="blue" />
+                <ProgressBar value={heroCourse.progressPercentage} size="sm" />
               </div>
 
               <Button
@@ -159,7 +164,7 @@ export const DashboardPage: React.FC = () => {
                 onClick={() => navigate(`/courses/${heroCourse.slug}`)}
                 className="w-full sm:w-auto font-semibold px-6"
               >
-                Continue Learning
+                {heroCourse.tag === 'Start Learning' ? 'Start Learning' : 'Continue Learning'}
               </Button>
             </div>
           </div>

@@ -1,5 +1,6 @@
 import api from './api.js';
 import { DashboardData, User } from '../types/index.js';
+import { getRoleCurriculum } from '../lib/roleCurricula.js';
 
 function getStoredUser(): User | null {
   try {
@@ -18,7 +19,7 @@ const devashishSeededData: DashboardData = {
   heroCourse: {
     title: 'JavaScript Async Programming',
     slug: 'js-async-programming',
-    description: 'Master Promises, async/await, and event loops to handle complex data fetching an...',
+    description: 'Master Promises, async/await, and event loops to handle complex data fetching and asynchronous streaming...',
     currentModuleTitle: 'Async / Await Mastery',
     currentModuleNumber: 3,
     totalModules: 5,
@@ -80,59 +81,30 @@ const devashishSeededData: DashboardData = {
   },
 };
 
-function createNewUserDashboard(user: User): DashboardData {
+function createRoleSpecificUserDashboard(user: User): DashboardData {
+  const config = getRoleCurriculum(user.targetRole);
+
   return {
     user: {
       name: user.name,
-      headline: user.headline || `${user.targetRole || 'Frontend Engineer'} in Training`,
-      targetRole: user.targetRole || 'Frontend Engineer',
+      headline: user.headline || `${config.roleName} in Training`,
+      targetRole: config.roleName,
     },
     heroCourse: {
-      title: 'JavaScript Async Programming',
-      slug: 'js-async-programming',
-      description: 'Start your journey: Master modern JavaScript, execution contexts, and core asynchronous mechanics.',
-      currentModuleTitle: 'Event Loop & Call Stack',
-      currentModuleNumber: 1,
-      totalModules: 5,
+      title: config.heroCourse.title,
+      slug: config.heroCourse.slug,
+      description: config.heroCourse.description,
+      currentModuleTitle: config.heroCourse.currentModuleTitle,
+      currentModuleNumber: config.heroCourse.currentModuleNumber,
+      totalModules: config.heroCourse.totalModules,
       progressPercentage: 0,
-      timeRemainingMinutes: 180,
+      timeRemainingMinutes: config.heroCourse.estimatedMinutes,
       tag: 'Start Learning',
     },
-    todayFocus: [
-      {
-        id: 'task-new-1',
-        title: 'Take baseline Technical Assessment',
-        typeLabel: 'Assessment',
-        durationMinutes: 10,
-        isCompleted: false,
-        order: 1,
-      },
-      {
-        id: 'task-new-2',
-        title: 'Complete Module 1: Event Loop Basics',
-        typeLabel: 'Video & Reading',
-        durationMinutes: 15,
-        isCompleted: false,
-        order: 2,
-      },
-      {
-        id: 'task-new-3',
-        title: 'Say hello to your AI Mentor',
-        typeLabel: 'Interactive Chat',
-        durationMinutes: 5,
-        isCompleted: false,
-        order: 3,
-      },
-    ],
+    todayFocus: config.todayFocus,
     roadmapTrack: {
-      pathTitle: `${user.targetRole || 'Frontend Engineering'} Path`,
-      steps: [
-        { id: '1', title: 'JS Fundamentals', status: 'IN_PROGRESS' },
-        { id: '2', title: 'DOM Manipulation', status: 'LOCKED' },
-        { id: '3', title: 'Async Programming', status: 'LOCKED' },
-        { id: '4', title: 'APIs', status: 'LOCKED' },
-        { id: '5', title: 'React', status: 'LOCKED' },
-      ],
+      pathTitle: `${config.roleName} Path`,
+      steps: config.roadmapSteps,
     },
     stats: {
       overallProgress: 0,
@@ -141,13 +113,13 @@ function createNewUserDashboard(user: User): DashboardData {
       coursesCompleted: 0,
     },
     recommendation: {
-      id: 'rec-new-1',
-      title: 'JavaScript Async Programming',
-      reason: 'Recommended starting point based on your selected target role.',
+      id: `rec-${config.recommendation.slug}`,
+      title: config.recommendation.title,
+      reason: config.recommendation.reason,
       course: {
-        id: 'js-async-programming',
-        title: 'JavaScript Async Programming',
-        slug: 'js-async-programming',
+        id: config.recommendation.slug,
+        title: config.recommendation.title,
+        slug: config.recommendation.slug,
       },
     },
   };
@@ -164,7 +136,6 @@ export const dashboardService = {
     try {
       const res = await api.get<{ success: boolean; data: DashboardData }>('/dashboard');
       if (res.data && res.data.success && res.data.data) {
-        // If backend returned data with real user name, use it
         if (currentUser && res.data.data.user) {
           res.data.data.user.name = currentUser.name;
         }
@@ -172,12 +143,12 @@ export const dashboardService = {
       }
       const data = isDevashish || !currentUser
         ? devashishSeededData
-        : createNewUserDashboard(currentUser);
+        : createRoleSpecificUserDashboard(currentUser);
       return { success: true, data };
     } catch (error) {
       const data = isDevashish || !currentUser
         ? devashishSeededData
-        : createNewUserDashboard(currentUser);
+        : createRoleSpecificUserDashboard(currentUser);
       return { success: true, data };
     }
   },

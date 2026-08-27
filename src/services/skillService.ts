@@ -1,5 +1,6 @@
 import api from './api.js';
 import { SkillAnalysisData, User } from '../types/index.js';
+import { getRoleCurriculum } from '../lib/roleCurricula.js';
 
 function getStoredUser(): User | null {
   try {
@@ -79,54 +80,40 @@ const devashishSkillData: SkillAnalysisData = {
   ],
 };
 
-function createNewUserSkillData(user: User): SkillAnalysisData {
+function createRoleSpecificSkillData(user: User): SkillAnalysisData {
+  const config = getRoleCurriculum(user.targetRole);
+
   return {
     primaryAssessment: {
-      category: `${user.targetRole || 'Frontend'} Engineering`,
-      targetLevel: 'Beginner to Intermediate',
+      category: `${config.roleName} Proficiency`,
+      targetLevel: 'Beginner to Advanced',
       overallProficiency: 0,
       statusLabel: 'Baseline Assessment Pending',
-      competencies: [
-        {
-          id: 'c-1',
-          name: 'DOM Manipulation',
-          proficiencyScore: 0,
-          status: 'NEEDS_PRACTICE',
-          targetLevel: 'Beginner',
-        },
-        {
-          id: 'c-2',
-          name: 'ES6+ Features',
-          proficiencyScore: 0,
-          status: 'NEEDS_PRACTICE',
-          targetLevel: 'Beginner',
-        },
-        {
-          id: 'c-3',
-          name: 'Data Structures',
-          proficiencyScore: 0,
-          status: 'NEEDS_PRACTICE',
-          targetLevel: 'Beginner',
-        },
-      ],
+      competencies: config.competencies.map((comp, idx) => ({
+        id: `c-${idx + 1}`,
+        name: comp.name,
+        proficiencyScore: 0,
+        status: 'NEEDS_PRACTICE',
+        targetLevel: comp.targetLevel,
+      })),
     },
     recommendedNextStep: {
-      title: 'Take Baseline Engineering Assessment',
+      title: `Take ${config.roleName} Benchmark`,
       description:
-        'Complete a quick 5-question technical benchmark to calibrate your skills and generate your custom roadmap.',
+        `Complete a quick technical assessment to calibrate your competencies in ${config.competencies.map(c => c.name).join(', ')}.`,
       estimatedHours: 'Est. 10 mins',
-      typeLabel: 'Interactive Quiz',
-      courseSlug: 'js-async-programming',
+      typeLabel: 'Interactive Benchmark',
+      courseSlug: config.heroCourse.slug,
     },
     gapAreas: [
       {
-        id: 'gap-initial',
-        skillName: 'Initial Calibration',
+        id: `gap-${config.category.toLowerCase().replace(/\s+/g, '-')}`,
+        skillName: config.competencies[0]?.name || 'Core Fundamentals',
         severity: 'Moderate',
-        description: 'Take your first technical test to populate real-time skill gaps and benchmark recommendations.',
-        targetLevel: 'Beginner',
-        recommendedCourseTitle: 'JavaScript Fundamentals',
-        recommendedCourseId: 'js-async-programming',
+        description: `Complete your initial technical assessment to generate a fine-grained skill gap diagnosis.`,
+        targetLevel: config.competencies[0]?.targetLevel || 'Intermediate',
+        recommendedCourseTitle: config.heroCourse.title,
+        recommendedCourseId: config.heroCourse.slug,
       },
     ],
   };
@@ -147,12 +134,12 @@ export const skillService = {
       }
       const data = isDevashish || !currentUser
         ? devashishSkillData
-        : createNewUserSkillData(currentUser);
+        : createRoleSpecificSkillData(currentUser);
       return { success: true, data };
     } catch (error) {
       const data = isDevashish || !currentUser
         ? devashishSkillData
-        : createNewUserSkillData(currentUser);
+        : createRoleSpecificSkillData(currentUser);
       return { success: true, data };
     }
   },

@@ -3,6 +3,225 @@ import { Course } from '../types/index.js';
 
 export const allCoursesDetailed: Course[] = [
   {
+    id: 'c-ai-1',
+    title: 'Python & Machine Learning Foundations',
+    slug: 'python-ml-foundations',
+    description:
+      'Master linear algebra, PyTorch tensors, neural network backpropagation, and transformer attention mechanisms from mathematical primitives to GPU acceleration.',
+    category: 'AI & Systems',
+    difficulty: 'Intermediate',
+    durationMinutes: 240,
+    isFeatured: true,
+    isRecommended: true,
+    modules: [
+      {
+        id: 'mod-ai-1',
+        title: 'Linear Algebra & Tensor Operations',
+        description: 'Matrix multiplication, eigenvalues, broadcasting, and GPU tensor allocations in PyTorch.',
+        order: 1,
+        estimatedMinutes: 50,
+        totalLessons: 3,
+        lessons: [
+          {
+            id: 'l-ai-1',
+            title: 'Tensors, Dimensions & GPU Allocation',
+            type: 'VIDEO',
+            durationMinutes: 15,
+            order: 1,
+            content:
+              'In deep learning, a Tensor is a multidimensional array with hardware acceleration support. PyTorch allows moving computational graphs seamlessly between CPU and CUDA devices (`tensor.to("cuda")`).',
+          },
+          {
+            id: 'l-ai-2',
+            title: 'Vector Broadcasting & Dot Product Semantics',
+            type: 'READING',
+            durationMinutes: 15,
+            order: 2,
+            content:
+              'Broadcasting allows element-wise operations on arrays of different shapes without copying data in memory. The trailing dimensions must either match or one of them must be 1.',
+          },
+          {
+            id: 'l-ai-3',
+            title: 'PyTorch Tensor Manipulation Challenge',
+            type: 'CODING_CHALLENGE',
+            durationMinutes: 20,
+            order: 3,
+            content:
+              'Implement a batch matrix multiplier with dimensional reshaping and cosine similarity calculation.',
+            codeSnippet: `import torch
+import torch.nn.functional as F
+
+def batch_cosine_similarity(tensor_a, tensor_b):
+    # Normalize embeddings along feature dimension
+    norm_a = F.normalize(tensor_a, p=2, dim=-1)
+    norm_b = F.normalize(tensor_b, p=2, dim=-1)
+    
+    # Compute similarity matrix: (Batch, N) x (Batch, N)^T
+    return torch.matmul(norm_a, norm_b.transpose(-1, -2))
+
+# Test verification:
+a = torch.randn(2, 4)
+b = torch.randn(2, 4)
+sim = batch_cosine_similarity(a, b)
+print("Computed similarity matrix shape:", sim.shape)`,
+          },
+        ],
+      },
+      {
+        id: 'mod-ai-2',
+        title: 'Neural Networks & Backpropagation',
+        description: 'Computational graphs, Autograd engine, activation functions (ReLU/GELU), and SGD/Adam optimizers.',
+        order: 2,
+        estimatedMinutes: 60,
+        totalLessons: 3,
+        lessons: [
+          {
+            id: 'l-ai-4',
+            title: 'Forward Pass & Autograd Computation Graph',
+            type: 'VIDEO',
+            durationMinutes: 20,
+            order: 1,
+            content:
+              'PyTorch Autograd records all tensor operations during the forward pass to build a directed acyclic graph (DAG). Calling `.backward()` computes partial derivatives using the multivariate chain rule.',
+          },
+          {
+            id: 'l-ai-5',
+            title: 'Cross-Entropy Loss & Softmax Mechanics',
+            type: 'READING',
+            durationMinutes: 20,
+            order: 2,
+            content:
+              'Softmax transforms unnormalized logits into a categorical probability distribution. Cross-entropy loss measures the divergence between predicted probabilities and target one-hot distributions.',
+          },
+          {
+            id: 'l-ai-6',
+            title: 'Build a Multi-Layer Perceptron (MLP)',
+            type: 'CODING_CHALLENGE',
+            durationMinutes: 20,
+            order: 3,
+            content:
+              'Build a 3-layer PyTorch neural network module with GELU activations and dropout regularization.',
+            codeSnippet: `import torch.nn as nn
+
+class FeedForwardMLP(nn.Module):
+    def __init__(self, in_features=128, hidden_dim=512, out_features=10):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Linear(in_features, hidden_dim),
+            nn.GELU(),
+            nn.Dropout(0.1),
+            nn.Linear(hidden_dim, out_features)
+        )
+
+    def forward(self, x):
+        return self.net(x)`,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c-ai-2',
+    title: 'Vector Databases & RAG Pipelines',
+    slug: 'vector-dbs-rag',
+    description:
+      'Build production Retrieval-Augmented Generation (RAG) pipelines with embedding chunking, vector indexing (HNSW), cosine reranking, and LLM context injection.',
+    category: 'AI & Systems',
+    difficulty: 'Advanced',
+    durationMinutes: 210,
+    isFeatured: true,
+    isRecommended: true,
+    modules: [
+      {
+        id: 'mod-rag-1',
+        title: 'Chunking & Embedding Generation',
+        description: 'Semantic chunking strategies, dense embeddings, and token limits.',
+        order: 1,
+        estimatedMinutes: 50,
+        totalLessons: 2,
+        lessons: [
+          {
+            id: 'l-rag-1',
+            title: 'Semantic Window Chunking & Overlap',
+            type: 'READING',
+            durationMinutes: 25,
+            order: 1,
+            content:
+              'Fixed character chunking often fractures context across sentence boundaries. Semantic chunking uses NLP sentence splitters with 10-15% sliding window overlap to maintain discourse coherence.',
+          },
+          {
+            id: 'l-rag-2',
+            title: 'Vector Similarity Indexing Challenge',
+            type: 'CODING_CHALLENGE',
+            durationMinutes: 25,
+            order: 2,
+            content: 'Implement a top-K semantic retriever with score thresholding.',
+            codeSnippet: `function retrieveTopK(queryEmbedding, documentVectors, topK = 3) {
+  return documentVectors
+    .map(doc => ({
+      ...doc,
+      score: cosineSimilarity(queryEmbedding, doc.embedding)
+    }))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, topK);
+}`,
+          },
+        ],
+      },
+    ],
+  },
+  {
+    id: 'c-fs-1',
+    title: 'Full Stack TypeScript Architecture',
+    slug: 'fullstack-typescript',
+    description:
+      'End-to-end full stack development with React, Node.js, TypeScript, PostgreSQL, and Docker containerization.',
+    category: 'Full Stack',
+    difficulty: 'Intermediate',
+    durationMinutes: 280,
+    isFeatured: true,
+    isRecommended: true,
+    modules: [
+      {
+        id: 'mod-fs-1',
+        title: 'Monorepo Architecture & Shared Schemas',
+        description: 'Sharing interfaces, Zod validation models, and DTOs across frontend and backend.',
+        order: 1,
+        estimatedMinutes: 50,
+        totalLessons: 2,
+        lessons: [
+          {
+            id: 'l-fs-1',
+            title: 'End-to-End Type Safety Principles',
+            type: 'READING',
+            durationMinutes: 25,
+            order: 1,
+            content:
+              'In modern full stack TypeScript, data schemas are defined once using schema validators (like Zod or Prisma) and inferred directly into React frontend states and Express request payloads.',
+          },
+          {
+            id: 'l-fs-2',
+            title: 'Shared Zod Validation Pipeline Challenge',
+            type: 'CODING_CHALLENGE',
+            durationMinutes: 25,
+            order: 2,
+            content: 'Write a shared request schema that validates user profile input across both client and API.',
+            codeSnippet: `import { z } from 'zod';
+
+export const UserRegistrationSchema = z.object({
+  name: z.string().min(2, "Name must be at least 2 characters"),
+  email: z.string().email("Invalid email format"),
+  targetRole: z.enum(['Frontend', 'Backend', 'AI & Systems', 'Full Stack']),
+  dailyGoalMinutes: z.number().min(15).max(180).default(45)
+});
+
+export type UserRegistrationDTO = z.infer<typeof UserRegistrationSchema>;`,
+          },
+        ],
+      },
+    ],
+  },
+  {
     id: 'c-1',
     title: 'JavaScript Async Programming',
     slug: 'js-async-programming',
@@ -29,7 +248,7 @@ export const allCoursesDetailed: Course[] = [
             durationMinutes: 15,
             order: 1,
             content:
-              'JavaScript is a single-threaded, non-blocking asynchronous concurrent runtime. When executing code, synchronous instructions are pushed onto the Call Stack and executed immediately (LIFO).\n\nWhen asynchronous operations like `fetch()`, `setTimeout()`, or DOM events are invoked, they are delegated to the Browser Web APIs thread pool, freeing the main thread to remain responsive at 60 FPS.',
+              'JavaScript is a single-threaded, non-blocking asynchronous concurrent runtime. Synchronous instructions are executed in the Call Stack (LIFO), while async operations are delegated to Browser Web APIs.',
           },
           {
             id: 'l-js-2',
@@ -38,7 +257,7 @@ export const allCoursesDetailed: Course[] = [
             durationMinutes: 15,
             order: 2,
             content:
-              'The Event Loop continuously inspects the Call Stack. When the Call Stack is completely empty, it processes tasks in this strict priority order:\n\n1. **Microtask Queue**: Promises (`.then()`, `.catch()`, `.finally()`), `queueMicrotask()`, and `MutationObserver`.\n2. **Render Phase**: Browser style recalculation, layout, and repaint.\n3. **Macrotask Queue**: `setTimeout`, `setInterval`, `setImmediate`, I/O operations.\n\nAll microtasks are drained to completion before the next macrotask is allowed to run.',
+              'Microtasks (Promises, queueMicrotask) are drained to completion before the browser renders and before the next Macrotask (setTimeout) runs.',
           },
           {
             id: 'l-js-3',
@@ -47,108 +266,13 @@ export const allCoursesDetailed: Course[] = [
             durationMinutes: 15,
             order: 3,
             content:
-              'Write a function that uses `queueMicrotask` to schedule high-priority background computations without blocking the UI rendering cycle.',
+              'Schedule high-priority background computations using queueMicrotask.',
             codeSnippet: `function scheduleImmediateMicrotask(callback) {
   if (typeof queueMicrotask === 'function') {
     queueMicrotask(callback);
   } else {
     Promise.resolve().then(callback);
   }
-}
-
-// Test invocation:
-scheduleImmediateMicrotask(() => {
-  console.log("Executed before next macrotask!");
-});`,
-          },
-        ],
-      },
-      {
-        id: 'mod-js-2',
-        title: 'Promises & Chaining',
-        description: 'Managing deferred computation states, error propagation, and chain linking.',
-        order: 2,
-        estimatedMinutes: 50,
-        totalLessons: 3,
-        lessons: [
-          {
-            id: 'l-js-4',
-            title: 'Promise States and Lifecycle Handlers',
-            type: 'VIDEO',
-            durationMinutes: 15,
-            order: 1,
-            content:
-              'A Promise is an object representing the eventual completion (or failure) of an asynchronous operation. It resides in one of 3 mutually exclusive states:\n- **Pending**: Initial state before resolution.\n- **Fulfilled**: Resolved successfully with a resultant value.\n- **Rejected**: Failed with an error reason.',
-          },
-          {
-            id: 'l-js-5',
-            title: 'Error Bubbling and Chaining Guarantees',
-            type: 'READING',
-            durationMinutes: 15,
-            order: 2,
-            content:
-              'In a Promise chain, any unhandled rejection propagates down the chain until it encounters a `.catch()` handler. Always return values inside `.then()` callbacks to pass data to the next step, and always attach a terminal `.catch()` or `.finally()` to clean up loaders or memory allocations.',
-          },
-          {
-            id: 'l-js-6',
-            title: 'Refactor Nested Callbacks to Promises',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 20,
-            order: 3,
-            content:
-              'Convert this legacy callback-hell pattern into a clean, chained Promise pipeline with unified error handling.',
-            codeSnippet: `function fetchUserProfile(userId) {
-  return fetch(\`/api/users/\${userId}\`)
-    .then(res => {
-      if (!res.ok) throw new Error("User not found");
-      return res.json();
-    })
-    .then(user => fetch(\`/api/scores/\${user.id}\`))
-    .then(res => res.json())
-    .catch(err => {
-      console.error("Pipeline failure:", err.message);
-      return { fallback: true };
-    });
-}`,
-          },
-        ],
-      },
-      {
-        id: 'mod-js-3',
-        title: 'Async / Await Mastery',
-        description: 'Synchronous-looking asynchronous syntax, try/catch boundaries, and concurrency.',
-        order: 3,
-        estimatedMinutes: 55,
-        totalLessons: 2,
-        lessons: [
-          {
-            id: 'l-js-7',
-            title: 'Async/Await Under the Hood & Generators',
-            type: 'READING',
-            durationMinutes: 25,
-            order: 1,
-            content:
-              '`async/await` is syntactic sugar built on top of ECMAScript Generators and Promises. An `async` function always returns a Promise. The `await` keyword suspends the execution of the async function generator until the promise settles, without blocking the browser thread.',
-          },
-          {
-            id: 'l-js-8',
-            title: 'Concurrent Execution with Promise.allSettled',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 30,
-            order: 2,
-            content:
-              'Build a resilient multi-source data aggregator that fetches multiple endpoints simultaneously and returns successful responses even if some endpoints fail.',
-            codeSnippet: `async function fetchAggregatedDashboard(endpoints) {
-  const settled = await Promise.allSettled(
-    endpoints.map(url => fetch(url).then(r => r.json()))
-  );
-
-  return settled.map((result, idx) => ({
-    endpoint: endpoints[idx],
-    status: result.status,
-    data: result.status === 'fulfilled' ? result.value : null,
-    error: result.status === 'rejected' ? result.reason.message : null
-  }));
 }`,
           },
         ],
@@ -173,298 +297,32 @@ scheduleImmediateMicrotask(() => {
         description: 'JSX semantics, pure components, props immutability, and conditional rendering.',
         order: 1,
         estimatedMinutes: 50,
-        totalLessons: 3,
+        totalLessons: 2,
         lessons: [
           {
             id: 'l-react-1',
             title: 'Declarative UI & Virtual DOM Reconciliation',
             type: 'VIDEO',
-            durationMinutes: 15,
+            durationMinutes: 20,
             order: 1,
             content:
-              'React uses a declarative programming paradigm. You describe what the UI should look like for a given state, and React handles DOM mutations using Fiber reconciliation (diffing algorithm) with $O(n)$ heuristic comparison.',
+              'React uses Fiber reconciliation to compute minimal DOM diffs and batch updates efficiently.',
           },
           {
             id: 'l-react-2',
-            title: 'Component Composition over Inheritance',
-            type: 'READING',
-            durationMinutes: 15,
-            order: 2,
-            content:
-              'In React, components can accept arbitrary props, including children elements and render props. Composition allows building flexible UI primitives like Modals, Cards, and Dropdowns with high reuse and separation of concerns.',
-          },
-          {
-            id: 'l-react-3',
             title: 'Custom Generic Card Component Challenge',
             type: 'CODING_CHALLENGE',
-            durationMinutes: 20,
-            order: 3,
-            content:
-              'Build a reusable TypeScript React Card component with slot support for header, footer, and variant styling.',
+            durationMinutes: 30,
+            order: 2,
+            content: 'Build a reusable TypeScript React Card component with slot support.',
             codeSnippet: `import React from 'react';
 
-interface CardProps {
-  title: string;
-  badge?: string;
-  children: React.ReactNode;
-  footer?: React.ReactNode;
-}
-
-export const ModernCard: React.FC<CardProps> = ({ title, badge, children, footer }) => (
-  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6 shadow-sm">
-    <div className="flex justify-between items-center mb-4">
-      <h3 className="text-base font-bold text-slate-900 dark:text-slate-100">{title}</h3>
-      {badge && <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-600">{badge}</span>}
-    </div>
+export const ModernCard = ({ title, children }) => (
+  <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-6">
+    <h3 className="text-base font-bold text-slate-900 dark:text-slate-100 mb-2">{title}</h3>
     <div className="text-sm text-slate-600 dark:text-slate-300">{children}</div>
-    {footer && <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-800">{footer}</div>}
   </div>
 );`,
-          },
-        ],
-      },
-      {
-        id: 'mod-react-2',
-        title: 'Hooks Mastery (useState, useEffect, useMemo)',
-        description: 'Reactive state lifecycles, synchronization with external systems, and memoization.',
-        order: 2,
-        estimatedMinutes: 60,
-        totalLessons: 3,
-        lessons: [
-          {
-            id: 'l-react-4',
-            title: 'The Rules of Hooks & State Batching',
-            type: 'VIDEO',
-            durationMinutes: 20,
-            order: 1,
-            content:
-              'In React 18, automatic batching combines multiple state updates into a single render pass, whether inside promises, timeouts, or native event handlers. Hooks must never be called conditionally or within nested loops.',
-          },
-          {
-            id: 'l-react-5',
-            title: 'Managing Side Effects & AbortControllers in useEffect',
-            type: 'READING',
-            durationMinutes: 20,
-            order: 2,
-            content:
-              '`useEffect` synchronizes your component with non-React widgets, network requests, or subscriptions. Always return a cleanup function from your effect to cancel pending network requests using `AbortController` and prevent memory leaks.',
-          },
-          {
-            id: 'l-react-6',
-            title: 'Custom useDebounce Hook Implementation',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 20,
-            order: 3,
-            content: 'Implement a type-safe `useDebounce` hook that delays updating a state value until after a specified delay.',
-            codeSnippet: `import { useState, useEffect } from 'react';
-
-export function useDebounce<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState<T>(value);
-
-  useEffect(() => {
-    const handler = setTimeout(() => {
-      setDebouncedValue(value);
-    }, delay);
-
-    return () => clearTimeout(handler);
-  }, [value, delay]);
-
-  return debouncedValue;
-}`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'c-3',
-    title: 'APIs & Fetch',
-    slug: 'apis-and-fetch',
-    description:
-      'Master HTTP methods, RESTful resource design, authentication headers, response streaming, and error handling.',
-    category: 'Frontend',
-    difficulty: 'Beginner',
-    durationMinutes: 180,
-    isFeatured: false,
-    isRecommended: true,
-    modules: [
-      {
-        id: 'mod-api-1',
-        title: 'REST Architecture & HTTP Semantics',
-        description: 'Understanding verbs, status codes, headers, and payload formats.',
-        order: 1,
-        estimatedMinutes: 45,
-        totalLessons: 2,
-        lessons: [
-          {
-            id: 'l-api-1',
-            title: 'HTTP Methods: GET, POST, PUT, PATCH, DELETE',
-            type: 'READING',
-            durationMinutes: 20,
-            order: 1,
-            content:
-              'REST (Representational State Transfer) treats server data as addressable resources. Idempotent methods (GET, PUT, DELETE) produce the same outcome on repeat executions without side effects, while POST creates new entities.',
-          },
-          {
-            id: 'l-api-2',
-            title: 'HTTP Status Codes and Error Resilience',
-            type: 'VIDEO',
-            durationMinutes: 25,
-            order: 2,
-            content:
-              'Explore 2xx (Success), 3xx (Redirect), 4xx (Client errors like 400 Bad Request, 401 Unauthorized, 403 Forbidden, 404 Not Found), and 5xx (Server errors like 500 Internal Server Error, 503 Service Unavailable).',
-          },
-        ],
-      },
-      {
-        id: 'mod-api-2',
-        title: 'Modern Fetch API & Axios Client',
-        description: 'Writing clean API clients with interceptors, timeouts, and authorization bearer tokens.',
-        order: 2,
-        estimatedMinutes: 50,
-        totalLessons: 2,
-        lessons: [
-          {
-            id: 'l-api-3',
-            title: 'Fetch vs Axios: Headers, Interceptors, and JSON Parsing',
-            type: 'READING',
-            durationMinutes: 25,
-            order: 1,
-            content:
-              'Native `fetch()` does not reject on 404 or 500 status codes (it only rejects on network failure). You must inspect `res.ok`. Axios automatically rejects non-2xx status codes and provides request/response interceptors.',
-          },
-          {
-            id: 'l-api-4',
-            title: 'Build a Resilient API Client with Interceptors',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 25,
-            order: 2,
-            content: 'Write an Axios client that automatically attaches Bearer tokens and handles token expiration gracefully.',
-            codeSnippet: `import axios from 'axios';
-
-export const apiClient = axios.create({
-  baseURL: 'https://api.learnpath.ai/v1',
-  timeout: 10000,
-});
-
-apiClient.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token && config.headers) {
-    config.headers.Authorization = \`Bearer \${token}\`;
-  }
-  return config;
-});`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'c-4',
-    title: 'Advanced Asynchronous Patterns in JS',
-    slug: 'advanced-async-patterns',
-    description:
-      'Focus on Promises, Async/Await under the hood, event emitters, worker threads, and handling complex race conditions.',
-    category: 'Frontend',
-    difficulty: 'Advanced',
-    durationMinutes: 240,
-    isFeatured: true,
-    isRecommended: true,
-    modules: [
-      {
-        id: 'mod-adv-1',
-        title: 'Concurrency & Race Condition Mitigation',
-        description: 'Preventing stale closures, outdated responses, and managing request cancellation.',
-        order: 1,
-        estimatedMinutes: 60,
-        totalLessons: 2,
-        lessons: [
-          {
-            id: 'l-adv-1',
-            title: 'Handling Async Race Conditions in Search Autocomplete',
-            type: 'READING',
-            durationMinutes: 30,
-            order: 1,
-            content:
-              'When users rapidly type into search inputs, earlier network requests may return AFTER later requests, overwriting newer search results. Solve this with `AbortController` or sequence IDs.',
-          },
-          {
-            id: 'l-adv-2',
-            title: 'Implement Async Queue with Rate Limiting',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 30,
-            order: 2,
-            content: 'Create an asynchronous task queue that limits concurrency to a maximum of $N$ parallel executions.',
-            codeSnippet: `class AsyncQueue {
-  constructor(concurrency = 2) {
-    this.concurrency = concurrency;
-    this.running = 0;
-    this.queue = [];
-  }
-
-  async add(task) {
-    if (this.running >= this.concurrency) {
-      await new Promise(resolve => this.queue.push(resolve));
-    }
-    this.running++;
-    try {
-      return await task();
-    } finally {
-      this.running--;
-      if (this.queue.length > 0) {
-        const next = this.queue.shift();
-        next();
-      }
-    }
-  }
-}`,
-          },
-        ],
-      },
-    ],
-  },
-  {
-    id: 'c-5',
-    title: 'Modern CSS & Responsive Design',
-    slug: 'modern-css-design',
-    description:
-      'Master CSS Grid, Flexbox, Container Queries, CSS Variables, dark mode palettes, and fluid typography.',
-    category: 'Frontend',
-    difficulty: 'Beginner',
-    durationMinutes: 180,
-    isFeatured: false,
-    isRecommended: false,
-    modules: [
-      {
-        id: 'mod-css-1',
-        title: 'Flexbox & CSS Grid Layouts',
-        description: 'One-dimensional vs two-dimensional responsive layouts without media query bloat.',
-        order: 1,
-        estimatedMinutes: 50,
-        totalLessons: 2,
-        lessons: [
-          {
-            id: 'l-css-1',
-            title: 'Flexbox Axes, Alignment, and Shorthands',
-            type: 'READING',
-            durationMinutes: 25,
-            order: 1,
-            content:
-              'Flexbox controls 1D distribution along the Main and Cross axes. Use `gap`, `justify-content`, `align-items`, and `flex: 1 1 auto` for responsive layouts.',
-          },
-          {
-            id: 'l-css-2',
-            title: 'Auto-Fit & MinMax in CSS Grid',
-            type: 'CODING_CHALLENGE',
-            durationMinutes: 25,
-            order: 2,
-            content: 'Create a responsive auto-wrapping grid that requires zero media queries.',
-            codeSnippet: `.responsive-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 1.5rem;
-  padding: 1rem;
-}`,
           },
         ],
       },
@@ -497,7 +355,7 @@ apiClient.interceptors.request.use((config) => {
             durationMinutes: 30,
             order: 1,
             content:
-              'Express executes middleware sequentially. Calling `next()` transfers control to the next middleware. Calling `next(err)` bypasses normal middleware and jumps straight to the 4-argument error handler `(err, req, res, next)`.',
+              'Express middleware functions receive (req, res, next). Calling next() passes execution to the subsequent handler in the pipeline.',
           },
           {
             id: 'l-node-2',
@@ -505,22 +363,18 @@ apiClient.interceptors.request.use((config) => {
             type: 'CODING_CHALLENGE',
             durationMinutes: 30,
             order: 2,
-            content: 'Write a robust JWT authentication middleware that validates Bearer tokens and attaches the user payload to the request object.',
+            content: 'Write a robust JWT authentication middleware that validates Bearer tokens.',
             codeSnippet: `import jwt from 'jsonwebtoken';
 
 export const authMiddleware = (req, res, next) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader?.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Token missing' });
-  }
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-  const token = authHeader.substring(7);
   try {
-    const payload = jwt.verify(token, process.env.JWT_SECRET || 'secret');
-    req.user = payload;
+    req.user = jwt.verify(token, process.env.JWT_SECRET || 'secret');
     next();
   } catch (err) {
-    return res.status(401).json({ error: 'Invalid or expired token' });
+    res.status(401).json({ error: 'Invalid token' });
   }
 };`,
           },
