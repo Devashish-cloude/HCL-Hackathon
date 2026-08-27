@@ -1,7 +1,15 @@
 import api from './api.js';
-import { Conversation, ChatMessage } from '../types/index.js';
+import { Conversation, ChatMessage, User } from '../types/index.js';
 
-const fallbackConversations: Conversation[] = [
+function getStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem('learnpath_user_data');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+const devashishConversations: Conversation[] = [
   {
     id: 'conv-1',
     title: 'CSS Flexbox Mastery',
@@ -67,24 +75,28 @@ const fallbackConversations: Conversation[] = [
       },
     ],
   },
-  {
-    id: 'conv-4',
-    title: 'Algorithm Practice: Sorting',
-    category: 'Algorithms',
-    timeGroup: 'YESTERDAY',
-    createdAt: new Date(Date.now() - 86400000).toISOString(),
-    updatedAt: new Date(Date.now() - 86400000).toISOString(),
-    messages: [
-      {
-        id: 'm-6',
-        role: 'assistant',
-        content:
-          'QuickSort and MergeSort both operate at O(n log n) average time complexity. For linked data structures, MergeSort is often preferred because it avoids random indexing.',
-        createdAt: new Date(Date.now() - 86400000).toISOString(),
-      },
-    ],
-  },
 ];
+
+function createNewUserConversations(user: User): Conversation[] {
+  return [
+    {
+      id: `conv-welcome-${user.id}`,
+      title: 'Welcome & Roadmap Planning',
+      category: 'General',
+      timeGroup: 'TODAY',
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+      messages: [
+        {
+          id: `msg-welcome-1`,
+          role: 'assistant',
+          content: `Hi **${user.name}**! 👋 Welcome to LearnPath AI.\n\nI am your 24/7 technical engineering mentor. I will guide you through your **${user.targetRole || 'Frontend Engineering'}** curriculum, review your code, and help you master tricky concepts.\n\nTo get started, what programming concept or challenge would you like to explore today?`,
+          createdAt: new Date().toISOString(),
+        },
+      ],
+    },
+  ];
+}
 
 function generateClientAIResponse(message: string): string {
   const lower = message.toLowerCase();
@@ -97,21 +109,15 @@ function generateClientAIResponse(message: string): string {
   - \`space-between\`: Distributes items evenly with first/last at edges.
 - **\`align-items\`**: Controls alignment along the **Cross Axis** (defaults to vertical column).
   - \`center\`: Vertically centers items.
-  - \`stretch\`: Expands items to fill the cross axis height.
 
-### Practical Centering Example:
 \`\`\`css
 .card-container {
   display: flex;
-  justify-content: center; /* Horizontally centered */
-  align-items: center;     /* Vertically centered */
+  justify-content: center;
+  align-items: center;
   min-height: 250px;
-  background: #f8fafc;
-  border-radius: 12px;
 }
-\`\`\`
-
-Would you like to try changing \`flex-direction: column\` to see how axis orientation changes?`;
+\`\`\``;
   }
 
   if (lower.includes('promise') || lower.includes('async') || lower.includes('await') || lower.includes('all')) {
@@ -119,28 +125,25 @@ Would you like to try changing \`flex-direction: column\` to see how axis orient
 
 1. **\`Promise.all([p1, p2])\`**:
    - Runs promises concurrently.
-   - Rejects immediately if **any** promise rejects (fail-fast).
+   - Rejects immediately if **any** promise rejects.
 2. **\`Promise.allSettled([p1, p2])\`**:
-   - Waits for all promises to finish regardless of whether they succeed or fail.
-   - Returns an array of objects: \`{ status: 'fulfilled', value }\` or \`{ status: 'rejected', reason }\`.
+   - Waits for all promises to finish regardless of success or failure.
 
 \`\`\`javascript
 const results = await Promise.allSettled([
   fetchUser(id),
   fetchRepoStats(id)
 ]);
-\`\`\`
-
-Would you like to see how to handle partial API errors in React state?`;
+\`\`\``;
   }
 
-  return `That is a great technical question! Let's break this down systematically:
+  return `That is a great question! Here is how we approach this in modern engineering:
 
-1. **Core Concept**: Ensure modular separation of concerns and clear error handling boundaries.
-2. **Best Practice**: Use typed interfaces and defensive programming to handle edge cases.
-3. **Execution**: Verify asynchronous resolution, re-render lifecycles, and caching mechanisms.
+1. **Break down requirements**: Ensure modular component boundaries and testable pure functions.
+2. **Handle edge cases**: Implement defensive error boundaries with try/catch and fallback states.
+3. **Execute**: Write clean, readable code and verify performance.
 
-Feel free to paste your code snippet and we can optimize or debug it together!`;
+Feel free to ask me to write a code example or explain any specific line!`;
 }
 
 export const aiService = {
@@ -155,6 +158,16 @@ export const aiService = {
       };
     };
   }> {
+    const currentUser = getStoredUser();
+    const isDevashish =
+      currentUser &&
+      (currentUser.email.toLowerCase().includes('devashish') ||
+        currentUser.name.toLowerCase() === 'devashish');
+
+    const convs = isDevashish || !currentUser
+      ? devashishConversations
+      : createNewUserConversations(currentUser);
+
     try {
       const res = await api.get('/conversations');
       if (res.data && res.data.success && res.data.data) {
@@ -163,10 +176,10 @@ export const aiService = {
       return {
         success: true,
         data: {
-          conversations: fallbackConversations,
+          conversations: convs,
           grouped: {
-            TODAY: fallbackConversations.filter((c) => c.timeGroup === 'TODAY'),
-            YESTERDAY: fallbackConversations.filter((c) => c.timeGroup === 'YESTERDAY'),
+            TODAY: convs.filter((c) => c.timeGroup === 'TODAY'),
+            YESTERDAY: convs.filter((c) => c.timeGroup === 'YESTERDAY'),
             PREVIOUS: [],
           },
         },
@@ -175,10 +188,10 @@ export const aiService = {
       return {
         success: true,
         data: {
-          conversations: fallbackConversations,
+          conversations: convs,
           grouped: {
-            TODAY: fallbackConversations.filter((c) => c.timeGroup === 'TODAY'),
-            YESTERDAY: fallbackConversations.filter((c) => c.timeGroup === 'YESTERDAY'),
+            TODAY: convs.filter((c) => c.timeGroup === 'TODAY'),
+            YESTERDAY: convs.filter((c) => c.timeGroup === 'YESTERDAY'),
             PREVIOUS: [],
           },
         },
@@ -187,15 +200,25 @@ export const aiService = {
   },
 
   async getConversation(id: string): Promise<{ success: boolean; data: Conversation }> {
+    const currentUser = getStoredUser();
+    const isDevashish =
+      currentUser &&
+      (currentUser.email.toLowerCase().includes('devashish') ||
+        currentUser.name.toLowerCase() === 'devashish');
+
+    const convs = isDevashish || !currentUser
+      ? devashishConversations
+      : createNewUserConversations(currentUser);
+
     try {
       const res = await api.get<{ success: boolean; data: Conversation }>(`/conversations/${id}`);
       if (res.data && res.data.success && res.data.data) {
         return res.data;
       }
-      const match = fallbackConversations.find((c) => c.id === id) || fallbackConversations[0];
+      const match = convs.find((c) => c.id === id) || convs[0];
       return { success: true, data: match };
     } catch (error) {
-      const match = fallbackConversations.find((c) => c.id === id) || fallbackConversations[0];
+      const match = convs.find((c) => c.id === id) || convs[0];
       return { success: true, data: match };
     }
   },

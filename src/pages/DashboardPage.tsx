@@ -19,8 +19,11 @@ import {
   Plus,
 } from 'lucide-react';
 
+import { useAuth } from '../contexts/AuthContext.js';
+
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user: authUser } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
@@ -75,13 +78,14 @@ export const DashboardPage: React.FC = () => {
   }
 
   const { user, heroCourse, todayFocus, roadmapTrack, stats, recommendation } = data;
+  const displayName = authUser?.name || user.name || 'Learner';
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
       {/* Header Greeting */}
       <div>
         <h2 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-slate-100 tracking-tight">
-          Good morning, {user.name}.
+          Good morning, {displayName}.
         </h2>
         <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 font-normal">
           Here's what you should focus on today.

@@ -1,7 +1,15 @@
 import api from './api.js';
-import { DashboardData } from '../types/index.js';
+import { DashboardData, User } from '../types/index.js';
 
-const fallbackDashboardData: DashboardData = {
+function getStoredUser(): User | null {
+  try {
+    const raw = localStorage.getItem('learnpath_user_data');
+    if (raw) return JSON.parse(raw);
+  } catch (e) {}
+  return null;
+}
+
+const devashishSeededData: DashboardData = {
   user: {
     name: 'Devashish',
     headline: 'Professional Learner',
@@ -72,17 +80,105 @@ const fallbackDashboardData: DashboardData = {
   },
 };
 
+function createNewUserDashboard(user: User): DashboardData {
+  return {
+    user: {
+      name: user.name,
+      headline: user.headline || `${user.targetRole || 'Frontend Engineer'} in Training`,
+      targetRole: user.targetRole || 'Frontend Engineer',
+    },
+    heroCourse: {
+      title: 'JavaScript Async Programming',
+      slug: 'js-async-programming',
+      description: 'Start your journey: Master modern JavaScript, execution contexts, and core asynchronous mechanics.',
+      currentModuleTitle: 'Event Loop & Call Stack',
+      currentModuleNumber: 1,
+      totalModules: 5,
+      progressPercentage: 0,
+      timeRemainingMinutes: 180,
+      tag: 'Start Learning',
+    },
+    todayFocus: [
+      {
+        id: 'task-new-1',
+        title: 'Take baseline Technical Assessment',
+        typeLabel: 'Assessment',
+        durationMinutes: 10,
+        isCompleted: false,
+        order: 1,
+      },
+      {
+        id: 'task-new-2',
+        title: 'Complete Module 1: Event Loop Basics',
+        typeLabel: 'Video & Reading',
+        durationMinutes: 15,
+        isCompleted: false,
+        order: 2,
+      },
+      {
+        id: 'task-new-3',
+        title: 'Say hello to your AI Mentor',
+        typeLabel: 'Interactive Chat',
+        durationMinutes: 5,
+        isCompleted: false,
+        order: 3,
+      },
+    ],
+    roadmapTrack: {
+      pathTitle: `${user.targetRole || 'Frontend Engineering'} Path`,
+      steps: [
+        { id: '1', title: 'JS Fundamentals', status: 'IN_PROGRESS' },
+        { id: '2', title: 'DOM Manipulation', status: 'LOCKED' },
+        { id: '3', title: 'Async Programming', status: 'LOCKED' },
+        { id: '4', title: 'APIs', status: 'LOCKED' },
+        { id: '5', title: 'React', status: 'LOCKED' },
+      ],
+    },
+    stats: {
+      overallProgress: 0,
+      learningStreak: 1,
+      skillsMastered: 0,
+      coursesCompleted: 0,
+    },
+    recommendation: {
+      id: 'rec-new-1',
+      title: 'JavaScript Async Programming',
+      reason: 'Recommended starting point based on your selected target role.',
+      course: {
+        id: 'js-async-programming',
+        title: 'JavaScript Async Programming',
+        slug: 'js-async-programming',
+      },
+    },
+  };
+}
+
 export const dashboardService = {
   async getDashboardData(): Promise<{ success: boolean; data: DashboardData }> {
+    const currentUser = getStoredUser();
+    const isDevashish =
+      currentUser &&
+      (currentUser.email.toLowerCase().includes('devashish') ||
+        currentUser.name.toLowerCase() === 'devashish');
+
     try {
       const res = await api.get<{ success: boolean; data: DashboardData }>('/dashboard');
       if (res.data && res.data.success && res.data.data) {
+        // If backend returned data with real user name, use it
+        if (currentUser && res.data.data.user) {
+          res.data.data.user.name = currentUser.name;
+        }
         return res.data;
       }
-      return { success: true, data: fallbackDashboardData };
+      const data = isDevashish || !currentUser
+        ? devashishSeededData
+        : createNewUserDashboard(currentUser);
+      return { success: true, data };
     } catch (error) {
-      // Graceful fallback for static deployments (Vercel)
-      return { success: true, data: fallbackDashboardData };
+      const data = isDevashish || !currentUser
+        ? devashishSeededData
+        : createNewUserDashboard(currentUser);
+      return { success: true, data };
     }
   },
 
