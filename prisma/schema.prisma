@@ -8,32 +8,36 @@ generator client {
 }
 
 model User {
-  id                 String             @id @default(uuid())
-  email              String             @unique
-  passwordHash       String
-  name               String
-  avatarUrl          String?
-  role               String             @default("STUDENT")
-  headline           String             @default("Professional Learner")
-  bio                String?
-  targetRole         String             @default("Frontend Engineer")
-  experienceLevel    String             @default("Intermediate")
-  theme              String             @default("light")
-  dailyGoalMinutes   Int                @default(45)
-  learningStreak     Int                @default(14)
-  totalHoursInvested Float              @default(38.0)
-  lastActiveAt       DateTime           @default(now())
-  createdAt          DateTime           @default(now())
-  updatedAt          DateTime           @updatedAt
+  id                  String             @id @default(uuid())
+  email               String             @unique
+  passwordHash        String
+  name                String
+  avatarUrl           String?
+  role                String             @default("STUDENT")
+  headline            String             @default("Professional Learner")
+  bio                 String?
+  targetRole          String             @default("Frontend Engineer")
+  experienceLevel     String             @default("Intermediate")
+  theme               String             @default("light")
+  dailyGoalMinutes    Int                @default(45)
+  learningStreak      Int                @default(1)
+  totalHoursInvested  Float              @default(0.0)
+  onboardingCompleted Boolean            @default(false)
+  interests           String?
+  learningStyle       String?
+  lastActiveAt        DateTime           @default(now())
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
 
-  learningPaths      LearningPath[]
-  progress           UserProgress[]
-  focusTasks         DailyFocusTask[]
-  userSkills         UserSkill[]
-  skillGaps          SkillGap[]
-  assessments        Assessment[]
-  conversations      Conversation[]
-  recommendations    Recommendation[]
+  learningPaths       LearningPath[]
+  progress            UserProgress[]
+  focusTasks          DailyFocusTask[]
+  userSkills          UserSkill[]
+  skillGaps           SkillGap[]
+  assessments         Assessment[]
+  conversations       Conversation[]
+  recommendations     Recommendation[]
+  notifications       Notification[]
 }
 
 model LearningPath {
@@ -43,10 +47,10 @@ model LearningPath {
   title               String          @default("Frontend Engineering Path")
   description         String
   targetRole          String
-  totalProgress       Int             @default(42)
+  totalProgress       Int             @default(0)
   totalHoursEstimated Int             @default(90)
-  totalHoursInvested  Float           @default(38.0)
-  currentFocus        String          @default("Async JavaScript")
+  totalHoursInvested  Float           @default(0.0)
+  currentFocus        String          @default("Core Foundations")
   currentPhaseIndex   Int             @default(1)
   createdAt           DateTime        @default(now())
   updatedAt           DateTime        @updatedAt
@@ -139,6 +143,8 @@ model UserProgress {
   progressPercentage Int      @default(0)
   isCompleted        Boolean  @default(false)
   lastAccessedAt     DateTime @default(now())
+
+  @@unique([userId, moduleId])
 }
 
 model DailyFocusTask {
@@ -182,6 +188,8 @@ model UserSkill {
   status           String   @default("PROFICIENT")
   targetLevel      String   @default("Advanced")
   lastEvaluatedAt  DateTime @default(now())
+
+  @@unique([userId, skillId])
 }
 
 model SkillGap {
@@ -267,4 +275,16 @@ model Recommendation {
   tags        String?
   isDismissed Boolean  @default(false)
   createdAt   DateTime @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO")
+  isRead    Boolean  @default(false)
+  linkUrl   String?
+  createdAt DateTime @default(now())
 }

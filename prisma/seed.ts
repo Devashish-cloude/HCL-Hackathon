@@ -47,6 +47,25 @@ async function main() {
     },
   });
 
+  // Official demo user (demo@learnpath.ai / Demo@123)
+  const demoPasswordHash = await bcrypt.hash('Demo@123', 10);
+  await prisma.user.create({
+    data: {
+      email: 'demo@learnpath.ai',
+      passwordHash: demoPasswordHash,
+      name: 'Demo Learner',
+      headline: 'Full Stack & AI Learner',
+      bio: 'Exploring production software architecture, AI agent systems, and distributed databases.',
+      targetRole: 'Full Stack Engineer',
+      experienceLevel: 'Intermediate',
+      theme: 'light',
+      dailyGoalMinutes: 45,
+      learningStreak: 5,
+      totalHoursInvested: 12.0,
+      onboardingCompleted: true,
+    },
+  });
+
   // Secondary demo user
   await prisma.user.create({
     data: {
@@ -61,6 +80,7 @@ async function main() {
       dailyGoalMinutes: 60,
       learningStreak: 8,
       totalHoursInvested: 24.5,
+      onboardingCompleted: true,
     },
   });
 

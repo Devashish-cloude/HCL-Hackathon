@@ -9,8 +9,8 @@ import { Mail, Lock, Sparkles, ArrowRight } from 'lucide-react';
 export const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const { login } = useAuth();
-  const [email, setEmail] = useState('devashish@learnpath.ai');
-  const [password, setPassword] = useState('password123');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -30,14 +30,21 @@ export const LoginPage: React.FC = () => {
   };
 
   const handleDemoLogin = async () => {
-    setEmail('devashish@learnpath.ai');
-    setPassword('password123');
+    setEmail('demo@learnpath.ai');
+    setPassword('Demo@123');
     setIsLoading(true);
+    setError('');
     try {
-      await login({ email: 'devashish@learnpath.ai', password: 'password123' });
+      await login({ email: 'demo@learnpath.ai', password: 'Demo@123' });
       navigate('/dashboard');
     } catch (err: any) {
-      setError(err.response?.data?.message || 'Demo login failed.');
+      // Fallback to devashish demo if demo@ is not seeded
+      try {
+        await login({ email: 'devashish@learnpath.ai', password: 'password123' });
+        navigate('/dashboard');
+      } catch (e: any) {
+        setError(err.response?.data?.message || 'Demo login failed.');
+      }
     } finally {
       setIsLoading(false);
     }
@@ -100,26 +107,28 @@ export const LoginPage: React.FC = () => {
             </Button>
           </form>
 
-          {/* Quick Demo Login */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-            <button
-              onClick={handleDemoLogin}
+          {/* Quick Demo Login Option for Reviewers */}
+          <div className="pt-2 border-t border-slate-100 dark:border-slate-800">
+            <Button
               type="button"
-              className="w-full flex items-center justify-center gap-2 p-2.5 rounded-xl border border-blue-200 dark:border-blue-800 bg-blue-50/60 dark:bg-blue-950/40 text-blue-600 dark:text-blue-400 font-semibold text-xs hover:bg-blue-100 transition-colors cursor-pointer"
+              variant="outline"
+              size="sm"
+              onClick={handleDemoLogin}
+              className="w-full text-xs font-semibold"
+              leftIcon={<Sparkles className="w-3.5 h-3.5 text-blue-500" />}
             >
-              <Sparkles className="w-4 h-4" />
-              <span>Sign in with Demo Account (Devashish)</span>
-            </button>
+              Explore with Demo Account (demo@learnpath.ai)
+            </Button>
           </div>
 
-          <div className="text-center pt-2">
+          <div className="text-center pt-1">
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Don't have an account?{' '}
               <Link
                 to="/register"
                 className="font-bold text-blue-600 dark:text-blue-400 hover:underline"
               >
-                Sign up
+                Create Account
               </Link>
             </p>
           </div>
