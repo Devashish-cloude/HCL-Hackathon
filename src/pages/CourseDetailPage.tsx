@@ -18,7 +18,8 @@ import {
   Terminal,
   Sparkles,
   Check,
-  Zap,
+  Trophy,
+  ArrowRight,
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -58,7 +59,7 @@ export const CourseDetailPage: React.FC = () => {
 
           setCompletedLessons(initialCompleted);
 
-          // Initialize first lesson code if any
+          // Initialize first lesson code
           const firstLesson = res.data.modules?.[0]?.lessons?.[0];
           if (firstLesson?.codeSnippet) {
             setUserCode(firstLesson.codeSnippet);
@@ -84,7 +85,7 @@ export const CourseDetailPage: React.FC = () => {
       setUserCode('');
       setCodeOutput(null);
     }
-  }, [currentLesson]);
+  }, [activeModuleIndex, activeLessonIndex, currentLesson]);
 
   if (isLoading || !course) {
     return (
@@ -106,6 +107,47 @@ export const CourseDetailPage: React.FC = () => {
     Math.max(0, Math.round((completedCount / totalLessonsCount) * 100))
   );
 
+  const isLastLesson =
+    course.modules &&
+    activeModuleIndex === course.modules.length - 1 &&
+    currentModule &&
+    activeLessonIndex === currentModule.lessons.length - 1;
+
+  // Language Detection
+  const isPython =
+    course.slug.includes('python') ||
+    course.slug.includes('rag') ||
+    course.category === 'AI & Systems';
+
+  const isNodeBackend =
+    course.slug.includes('node') ||
+    course.slug.includes('express') ||
+    course.category === 'Backend';
+
+  const isReact =
+    course.slug.includes('react') ||
+    course.category === 'Frontend';
+
+  const languageLabel = isPython
+    ? 'Python 3.11 / PyTorch'
+    : isNodeBackend
+    ? 'Node.js 20 / Express'
+    : isReact
+    ? 'React 18 / TypeScript'
+    : 'TypeScript / Node.js';
+
+  const fileLabel = isPython
+    ? 'solution.py'
+    : isNodeBackend
+    ? 'server.js'
+    : isReact
+    ? 'App.tsx'
+    : 'solution.ts';
+
+  const placeholderText = isPython
+    ? '# Write your Python / PyTorch solution here...'
+    : '// Write your code solution here...';
+
   const handleMarkComplete = () => {
     const key = `${activeModuleIndex}-${activeLessonIndex}`;
     setCompletedLessons((prev) => ({ ...prev, [key]: true }));
@@ -113,12 +155,17 @@ export const CourseDetailPage: React.FC = () => {
     // Persist in User Progress Store
     if (slug) {
       userProgressStore.markLessonComplete(slug, activeModuleIndex, activeLessonIndex, user?.id);
+      
+      // If completing all lessons in this course
+      if (completedCount + 1 >= totalLessonsCount) {
+        userProgressStore.markCourseComplete(slug, user?.id);
+      }
     }
 
     confetti({
-      particleCount: 50,
-      spread: 60,
-      origin: { y: 0.7 },
+      particleCount: 60,
+      spread: 70,
+      origin: { y: 0.65 },
     });
 
     // Advance to next lesson if available
@@ -143,7 +190,7 @@ export const CourseDetailPage: React.FC = () => {
   const handleRunCode = () => {
     setIsRunningCode(true);
     setTimeout(() => {
-      setCodeOutput('✓ All 3 test assertions passed! (Execution time: 14ms)');
+      setCodeOutput('✓ All 3 test assertions passed! (Execution time: 12ms)');
       setIsRunningCode(false);
       handleMarkComplete();
     }, 600);
@@ -167,22 +214,69 @@ export const CourseDetailPage: React.FC = () => {
   return (
     <div className="space-y-6 max-w-6xl mx-auto pb-12">
       {/* Header Breadcrumb */}
-      <div className="flex items-center gap-3">
-        <button
-          onClick={() => navigate('/dashboard')}
-          className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
-        >
-          <ArrowLeft className="w-4 h-4" />
-        </button>
-        <div>
-          <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
-            {course.category} Track
-          </span>
-          <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100">
-            {course.title}
-          </h2>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            onClick={() => navigate('/dashboard')}
+            className="p-2 rounded-xl text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-slate-100 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors cursor-pointer"
+          >
+            <ArrowLeft className="w-4 h-4" />
+          </button>
+          <div>
+            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
+              {course.category} Track
+            </span>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-slate-900 dark:text-slate-100">
+              {course.title}
+            </h2>
+          </div>
         </div>
+
+        {progressPercent === 100 && (
+          <Badge variant="green" size="md">
+            <Trophy className="w-3.5 h-3.5 mr-1" />
+            Course 100% Completed
+          </Badge>
+        )}
       </div>
+
+      {/* Course Completion Banner */}
+      {progressPercent === 100 && (
+        <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-r from-emerald-500/10 via-blue-500/10 to-indigo-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-emerald-500 text-white flex items-center justify-center font-bold text-lg shadow-sm">
+              🏆
+            </div>
+            <div>
+              <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-slate-100">
+                You have mastered {course.title}!
+              </h4>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                All {totalLessonsCount} lessons completed. Your progress is synced to your Dashboard and Roadmap.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <Button
+              variant="primary"
+              size="sm"
+              onClick={() => navigate('/dashboard')}
+              className="font-semibold text-xs flex-1 sm:flex-none cursor-pointer"
+            >
+              Go to Dashboard
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => navigate('/ai-mentor')}
+              className="font-semibold text-xs flex-1 sm:flex-none cursor-pointer"
+            >
+              Ask AI Mentor
+            </Button>
+          </div>
+        </div>
+      )}
 
       {/* Main Grid: Player on left (2 Cols), Syllabus on right (1 Col) */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 items-start">
@@ -233,20 +327,20 @@ export const CourseDetailPage: React.FC = () => {
                       Interactive Code Challenge
                     </h4>
                   </div>
-                  <span className="text-[10px] font-mono text-slate-400">Node.js / TypeScript</span>
+                  <span className="text-[10px] font-mono text-slate-400">{languageLabel}</span>
                 </div>
 
-                <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950">
+                <div className="rounded-xl overflow-hidden border border-slate-800 bg-slate-950 shadow-md">
                   <div className="px-4 py-2 bg-slate-900 border-b border-slate-800 flex items-center justify-between text-xs font-mono text-slate-400">
-                    <span>solution.ts</span>
+                    <span>{fileLabel}</span>
                     <span>UTF-8</span>
                   </div>
                   <textarea
                     value={userCode}
                     onChange={(e) => setUserCode(e.target.value)}
-                    rows={8}
+                    rows={9}
                     className="w-full p-4 bg-slate-950 text-emerald-400 font-mono text-xs focus:outline-none resize-none leading-relaxed"
-                    placeholder="// Write your code solution here..."
+                    placeholder={placeholderText}
                   />
                 </div>
 
@@ -264,8 +358,9 @@ export const CourseDetailPage: React.FC = () => {
                 </div>
 
                 {codeOutput && (
-                  <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs font-mono text-emerald-300">
-                    {codeOutput}
+                  <div className="p-3 bg-emerald-950/40 border border-emerald-800/60 rounded-xl text-xs font-mono text-emerald-300 flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-400 flex-shrink-0" />
+                    <span>{codeOutput}</span>
                   </div>
                 )}
               </div>
@@ -290,7 +385,11 @@ export const CourseDetailPage: React.FC = () => {
                 className="font-semibold text-xs cursor-pointer"
                 leftIcon={<Check className="w-4 h-4" />}
               >
-                Mark Complete & Next
+                {isLastLesson && progressPercent === 100
+                  ? 'Course Completed 🎉'
+                  : isLastLesson
+                  ? 'Complete & Finish Course 🎉'
+                  : 'Mark Complete & Next'}
               </Button>
             </div>
           </Card>

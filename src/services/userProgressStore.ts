@@ -2,6 +2,7 @@ export interface StoredProgress {
   completedFocusTaskIds: string[];
   completedLessonKeys: string[];
   completedModuleIds: string[];
+  completedCourseSlugs: string[];
   timeInvestedMinutes: number;
 }
 
@@ -14,7 +15,14 @@ export const userProgressStore = {
     try {
       const raw = localStorage.getItem(getStorageKey(userId));
       if (raw) {
-        return JSON.parse(raw);
+        const parsed = JSON.parse(raw);
+        return {
+          completedFocusTaskIds: parsed.completedFocusTaskIds || [],
+          completedLessonKeys: parsed.completedLessonKeys || [],
+          completedModuleIds: parsed.completedModuleIds || [],
+          completedCourseSlugs: parsed.completedCourseSlugs || [],
+          timeInvestedMinutes: parsed.timeInvestedMinutes || 0,
+        };
       }
     } catch (e) {
       console.error('Failed to read stored progress:', e);
@@ -23,6 +31,7 @@ export const userProgressStore = {
       completedFocusTaskIds: [],
       completedLessonKeys: [],
       completedModuleIds: [],
+      completedCourseSlugs: [],
       timeInvestedMinutes: 0,
     };
   },
@@ -75,6 +84,22 @@ export const userProgressStore = {
       ...current,
       completedLessonKeys: updatedLessonKeys,
       timeInvestedMinutes: current.timeInvestedMinutes + 20,
+    };
+
+    this.saveProgress(updated, userId);
+    return updated;
+  },
+
+  markCourseComplete(courseSlug: string, userId?: string): StoredProgress {
+    const current = this.getProgress(userId);
+    if (current.completedCourseSlugs.includes(courseSlug)) {
+      return current;
+    }
+
+    const updated: StoredProgress = {
+      ...current,
+      completedCourseSlugs: [...current.completedCourseSlugs, courseSlug],
+      timeInvestedMinutes: current.timeInvestedMinutes + 30,
     };
 
     this.saveProgress(updated, userId);
