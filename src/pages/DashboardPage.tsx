@@ -227,9 +227,10 @@ export const DashboardPage: React.FC = () => {
         </div>
 
         {/* Milestone Steps Timeline */}
-        <div className="relative flex items-center justify-between">
-          {/* Connector Line */}
-          <div className="absolute left-8 right-8 top-4 h-0.5 bg-slate-200 dark:bg-slate-800 -z-0" />
+        <div className="overflow-x-auto pb-2 -mx-2 px-2">
+          <div className="relative flex items-center justify-between min-w-[480px]">
+            {/* Connector Line */}
+            <div className="absolute left-8 right-8 top-4 h-0.5 bg-slate-200 dark:bg-slate-800 -z-0" />
 
           {roadmapTrack.steps.map((step, idx) => {
             const isCompleted = step.status === 'COMPLETED';
@@ -281,6 +282,7 @@ export const DashboardPage: React.FC = () => {
               </div>
             );
           })}
+          </div>
         </div>
       </Card>
 

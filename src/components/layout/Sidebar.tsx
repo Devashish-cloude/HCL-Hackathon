@@ -10,6 +10,7 @@ import {
   Settings,
   HelpCircle,
   Plus,
+  X,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext.js';
 import { Avatar } from '../common/Avatar.js';
@@ -17,9 +18,15 @@ import { cn } from '../../lib/utils.js';
 
 interface SidebarProps {
   onOpenAssessmentModal?: () => void;
+  isMobileOpen?: boolean;
+  onMobileClose?: () => void;
 }
 
-export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
+export const Sidebar: React.FC<SidebarProps> = ({
+  onOpenAssessmentModal,
+  isMobileOpen = false,
+  onMobileClose,
+}) => {
   const { user } = useAuth();
   const location = useLocation();
 
@@ -32,21 +39,34 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
     { name: 'Progress', path: '/progress', icon: BarChart2 },
   ];
 
-  return (
-    <aside className="w-64 flex-shrink-0 bg-white dark:bg-slate-900 border-r border-slate-200/80 dark:border-slate-800 flex flex-col h-screen sticky top-0 select-none z-30">
+  const sidebarContent = (
+    <div className="flex flex-col h-full bg-white dark:bg-slate-900">
       {/* Brand Header */}
-      <div className="p-6 pb-5 flex items-center gap-3">
-        <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-sm shadow-blue-500/20 font-bold text-lg">
-          L
+      <div className="p-6 pb-5 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-sm shadow-blue-500/20 font-bold text-lg">
+            L
+          </div>
+          <div>
+            <h1 className="font-extrabold text-lg tracking-tight text-blue-600 dark:text-blue-500 leading-tight">
+              LearnPath AI
+            </h1>
+            <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
+              {user?.headline || 'Professional Learner'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h1 className="font-extrabold text-lg tracking-tight text-blue-600 dark:text-blue-500 leading-tight">
-            LearnPath AI
-          </h1>
-          <p className="text-xs text-slate-400 dark:text-slate-500 font-medium">
-            {user?.headline || 'Professional Learner'}
-          </p>
-        </div>
+
+        {/* Mobile Close Button */}
+        {onMobileClose && (
+          <button
+            onClick={onMobileClose}
+            type="button"
+            className="lg:hidden p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
@@ -61,6 +81,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
             <NavLink
               key={item.path}
               to={item.path}
+              onClick={() => {
+                if (onMobileClose) onMobileClose();
+              }}
               className={cn(
                 'flex items-center gap-3.5 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all duration-150',
                 isActive
@@ -84,7 +107,10 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
       <div className="p-4 border-t border-slate-100 dark:border-slate-800/80 space-y-3">
         {/* New Assessment Primary Button */}
         <button
-          onClick={onOpenAssessmentModal}
+          onClick={() => {
+            if (onMobileClose) onMobileClose();
+            if (onOpenAssessmentModal) onOpenAssessmentModal();
+          }}
           type="button"
           className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.99] text-white font-medium text-sm py-2.5 px-4 rounded-xl shadow-sm shadow-blue-500/10 transition-all duration-150 cursor-pointer"
         >
@@ -96,6 +122,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
         <div className="space-y-0.5 pt-1">
           <NavLink
             to="/settings"
+            onClick={() => {
+              if (onMobileClose) onMobileClose();
+            }}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors',
@@ -108,6 +137,9 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
           </NavLink>
           <NavLink
             to="/help"
+            onClick={() => {
+              if (onMobileClose) onMobileClose();
+            }}
             className={({ isActive }) =>
               cn(
                 'flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-slate-100 hover:bg-slate-50 dark:hover:bg-slate-800/60 transition-colors',
@@ -133,6 +165,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ onOpenAssessmentModal }) => {
           </div>
         </div>
       </div>
-    </aside>
+    </div>
+  );
+
+  return (
+    <>
+      {/* Desktop Sidebar (hidden on mobile) */}
+      <aside className="hidden lg:flex flex-col w-64 flex-shrink-0 border-r border-slate-200/80 dark:border-slate-800 h-screen sticky top-0 select-none z-30">
+        {sidebarContent}
+      </aside>
+
+      {/* Mobile Drawer Overlay */}
+      {isMobileOpen && (
+        <div className="fixed inset-0 z-50 lg:hidden flex">
+          {/* Backdrop */}
+          <div
+            className="fixed inset-0 bg-slate-950/60 backdrop-blur-xs transition-opacity"
+            onClick={onMobileClose}
+          />
+
+          {/* Drawer Panel */}
+          <div className="relative w-72 max-w-[85vw] h-full shadow-2xl z-10 animate-in slide-in-from-left duration-200">
+            {sidebarContent}
+          </div>
+        </div>
+      )}
+    </>
   );
 };
