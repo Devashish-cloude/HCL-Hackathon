@@ -724,6 +724,32 @@ export const aiService = {
       }
       throw new Error('Fallback required');
     } catch (error) {
+      let aiResponseText = '';
+      const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+
+      if (apiKey && apiKey.length > 10) {
+        try {
+          const geminiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
+          const res = await fetch(geminiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: `You are LearnPath AI Mentor, an expert programming coach. Help the student with: ${data.message}` }] }],
+            }),
+          });
+          if (res.ok) {
+            const json = await res.json();
+            aiResponseText = json.candidates?.[0]?.content?.parts?.[0]?.text || '';
+          }
+        } catch (e) {
+          console.warn('Gemini direct API call error, falling back to local NLP engine:', e);
+        }
+      }
+
+      if (!aiResponseText) {
+        aiResponseText = generateIntelligentAIResponse(data.message);
+      }
+
       const userMsg: ChatMessage = {
         id: `user-${Date.now()}`,
         role: 'user',
@@ -733,7 +759,7 @@ export const aiService = {
       const aiMsg: ChatMessage = {
         id: `ai-${Date.now()}`,
         role: 'assistant',
-        content: generateIntelligentAIResponse(data.message),
+        content: aiResponseText,
         createdAt: new Date().toISOString(),
       };
       return {
