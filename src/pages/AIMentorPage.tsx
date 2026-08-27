@@ -9,11 +9,12 @@ import {
   Plus,
   Bot,
   MoreVertical,
-  ChevronLeft,
   MessageSquare,
   Zap,
   Layers,
   Code,
+  Copy,
+  Check,
 } from 'lucide-react';
 import { cn } from '../lib/utils.js';
 
@@ -26,6 +27,7 @@ export const AIMentorPage: React.FC = () => {
   const [isSending, setIsSending] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [mobileShowSidebar, setMobileShowSidebar] = useState(false);
+  const [copiedCodeId, setCopiedCodeId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const fetchConversations = async () => {
@@ -127,56 +129,161 @@ export const AIMentorPage: React.FC = () => {
     }
   };
 
+  const copyToClipboard = (text: string, id: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedCodeId(id);
+    setTimeout(() => setCopiedCodeId(null), 2000);
+  };
+
   const activeConv = conversations.find((c) => c.id === activeConvId);
   const todayList = conversations.filter((c) => c.timeGroup === 'TODAY');
   const yesterdayList = conversations.filter((c) => c.timeGroup === 'YESTERDAY');
 
+  // Comprehensive Markdown parser for rich headings, bullet lists, bold text, inline code, and code blocks
+  const renderInlineFormatted = (text: string) => {
+    // Split on bold (**...**) and inline code (`...`)
+    const parts = text.split(/(\*\*.*?\*\*|`.*?`)/g);
+
+    return parts.map((part, pIdx) => {
+      if (part.startsWith('**') && part.endsWith('**')) {
+        return (
+          <strong key={pIdx} className="font-bold text-slate-900 dark:text-slate-100">
+            {part.slice(2, -2)}
+          </strong>
+        );
+      }
+      if (part.startsWith('`') && part.endsWith('`')) {
+        return (
+          <code
+            key={pIdx}
+            className="px-1.5 py-0.5 mx-0.5 rounded bg-blue-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-mono text-xs font-semibold border border-blue-100 dark:border-slate-700"
+          >
+            {part.slice(1, -1)}
+          </code>
+        );
+      }
+      return part;
+    });
+  };
+
   const renderFormattedMessage = (content: string) => {
-    const parts = content.split(/(```[\s\S]*?```)/g);
-    return parts.map((part, index) => {
-      if (part.startsWith('```')) {
-        const lines = part.slice(3, -3).trim().split('\n');
-        const firstLine = lines[0].trim();
-        const hasLang = ['css', 'js', 'javascript', 'html', 'tsx', 'ts'].includes(firstLine.toLowerCase());
-        const codeText = hasLang ? lines.slice(1).join('\n') : lines.join('\n');
+    // Split by code blocks first
+    const blockParts = content.split(/(```[\s\S]*?```)/g);
+
+    return blockParts.map((block, bIdx) => {
+      // Code Block
+      if (block.startsWith('```')) {
+        const rawLines = block.slice(3, -3).trim().split('\n');
+        const firstLine = rawLines[0].trim();
+        const knownLangs = ['cpp', 'c++', 'c', 'python', 'py', 'javascript', 'js', 'typescript', 'ts', 'html', 'css', 'java', 'sql', 'dockerfile', 'bash', 'sh'];
+        const isLangHeader = knownLangs.includes(firstLine.toLowerCase());
+        const lang = isLangHeader ? firstLine.toLowerCase() : 'code';
+        const codeContent = isLangHeader ? rawLines.slice(1).join('\n') : rawLines.join('\n');
+        const blockId = `code-${bIdx}-${codeContent.length}`;
 
         return (
-          <pre
-            key={index}
-            className="my-3 p-3.5 bg-slate-900 text-slate-100 rounded-xl text-xs font-mono overflow-x-auto border border-slate-800"
+          <div
+            key={bIdx}
+            className="my-3.5 rounded-xl overflow-hidden border border-slate-800 bg-slate-950 text-slate-100 shadow-md"
           >
-            <code>{codeText}</code>
-          </pre>
+            <div className="flex items-center justify-between px-3.5 py-1.5 bg-slate-900 border-b border-slate-800 text-[11px] font-mono text-slate-400">
+              <span className="uppercase font-bold tracking-wider">{lang}</span>
+              <button
+                type="button"
+                onClick={() => copyToClipboard(codeContent, blockId)}
+                className="flex items-center gap-1 hover:text-slate-200 transition-colors cursor-pointer text-[10px]"
+              >
+                {copiedCodeId === blockId ? (
+                  <>
+                    <Check className="w-3 h-3 text-emerald-400" />
+                    <span className="text-emerald-400">Copied</span>
+                  </>
+                ) : (
+                  <>
+                    <Copy className="w-3 h-3" />
+                    <span>Copy</span>
+                  </>
+                )}
+              </button>
+            </div>
+            <pre className="p-3.5 text-xs font-mono overflow-x-auto leading-relaxed text-emerald-300">
+              <code>{codeContent}</code>
+            </pre>
+          </div>
         );
       }
 
-      const subparts = part.split(/(\*\*.*?\*\*)/g);
+      // Normal text: process line by line for markdown headings, horizontal rules, and bullet points
+      const lines = block.split('\n');
       return (
-        <span key={index} className="whitespace-pre-wrap">
-          {subparts.map((sub, sIdx) => {
-            if (sub.startsWith('**') && sub.endsWith('**')) {
+        <div key={bIdx} className="space-y-1.5 text-xs sm:text-sm leading-relaxed">
+          {lines.map((line, lIdx) => {
+            const trimmed = line.trim();
+
+            if (!trimmed) {
+              return <div key={lIdx} className="h-1" />;
+            }
+
+            // Heading 3: ### ...
+            if (trimmed.startsWith('### ')) {
               return (
-                <strong key={sIdx} className="font-bold text-slate-900 dark:text-slate-100">
-                  {sub.slice(2, -2)}
-                </strong>
+                <h3
+                  key={lIdx}
+                  className="text-sm sm:text-base font-extrabold text-slate-900 dark:text-slate-100 pt-2 pb-0.5 tracking-tight border-b border-slate-200/60 dark:border-slate-700/60"
+                >
+                  {renderInlineFormatted(trimmed.slice(4))}
+                </h3>
               );
             }
-            const codeParts = sub.split(/(`.*?`)/g);
-            return codeParts.map((cp, cpIdx) => {
-              if (cp.startsWith('`') && cp.endsWith('`')) {
-                return (
-                  <code
-                    key={cpIdx}
-                    className="px-1.5 py-0.5 mx-0.5 rounded bg-slate-100 dark:bg-slate-800 text-blue-600 dark:text-blue-400 font-mono text-xs"
-                  >
-                    {cp.slice(1, -1)}
-                  </code>
-                );
-              }
-              return cp;
-            });
+
+            // Heading 4: #### ...
+            if (trimmed.startsWith('#### ')) {
+              return (
+                <h4
+                  key={lIdx}
+                  className="text-xs sm:text-sm font-bold text-blue-700 dark:text-blue-400 pt-2 pb-0.5 tracking-tight"
+                >
+                  {renderInlineFormatted(trimmed.slice(5))}
+                </h4>
+              );
+            }
+
+            // Horizontal Rule: ---
+            if (trimmed === '---' || trimmed === '***') {
+              return <hr key={lIdx} className="my-2.5 border-slate-200/80 dark:border-slate-700/80" />;
+            }
+
+            // Bullet Point: - ... or * ...
+            if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
+              return (
+                <div key={lIdx} className="flex items-start gap-2 pl-2 py-0.5 text-slate-700 dark:text-slate-300">
+                  <span className="w-1.5 h-1.5 rounded-full bg-blue-500 flex-shrink-0 mt-1.5" />
+                  <span className="flex-1">{renderInlineFormatted(trimmed.slice(2))}</span>
+                </div>
+              );
+            }
+
+            // Numbered List: 1. ...
+            const numMatch = trimmed.match(/^(\d+)\.\s+(.*)$/);
+            if (numMatch) {
+              return (
+                <div key={lIdx} className="flex items-start gap-2 pl-2 py-0.5 text-slate-700 dark:text-slate-300">
+                  <span className="font-bold text-blue-600 dark:text-blue-400 text-xs w-4 flex-shrink-0">
+                    {numMatch[1]}.
+                  </span>
+                  <span className="flex-1">{renderInlineFormatted(numMatch[2])}</span>
+                </div>
+              );
+            }
+
+            // Regular Paragraph
+            return (
+              <p key={lIdx} className="text-slate-800 dark:text-slate-200 leading-relaxed">
+                {renderInlineFormatted(line)}
+              </p>
+            );
           })}
-        </span>
+        </div>
       );
     });
   };
@@ -315,16 +422,16 @@ export const AIMentorPage: React.FC = () => {
 
             if (isBot) {
               return (
-                <div key={msg.id} className="flex items-start gap-2.5 sm:gap-3.5 max-w-2xl">
-                  <div className="w-7 h-7 sm:w-8 h-8 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-600 dark:text-slate-300 flex-shrink-0 mt-0.5">
+                <div key={msg.id} className="flex items-start gap-2.5 sm:gap-3.5 max-w-3xl">
+                  <div className="w-7 h-7 sm:w-8 h-8 rounded-xl bg-blue-100 dark:bg-blue-950 text-blue-600 dark:text-blue-400 flex items-center justify-center flex-shrink-0 mt-0.5 shadow-xs">
                     <Bot className="w-4 h-4" />
                   </div>
 
-                  <div className="space-y-1">
+                  <div className="space-y-1 flex-1 min-w-0">
                     <span className="text-[10px] sm:text-[11px] font-semibold text-slate-400 dark:text-slate-500 block">
                       AI Mentor
                     </span>
-                    <div className="p-3 sm:p-4 rounded-2xl bg-slate-50/90 dark:bg-slate-800/80 border border-slate-100 dark:border-slate-700/60 text-xs sm:text-sm text-slate-800 dark:text-slate-200 leading-relaxed shadow-xs">
+                    <div className="p-4 sm:p-5 rounded-2xl bg-slate-50/95 dark:bg-slate-800/90 border border-slate-200/70 dark:border-slate-700/70 text-slate-900 dark:text-slate-100 shadow-xs">
                       {renderFormattedMessage(msg.content)}
                     </div>
                   </div>
@@ -339,7 +446,7 @@ export const AIMentorPage: React.FC = () => {
                   <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-700" />
                 </div>
 
-                <div className="max-w-xl p-3 sm:p-4 rounded-2xl bg-blue-600 text-white text-xs sm:text-sm leading-relaxed shadow-sm">
+                <div className="max-w-xl p-3 sm:p-4 rounded-2xl bg-blue-600 text-white text-xs sm:text-sm leading-relaxed shadow-sm font-medium">
                   {msg.content}
                 </div>
               </div>
@@ -366,33 +473,33 @@ export const AIMentorPage: React.FC = () => {
         <div className="px-4 sm:px-6 py-2 flex items-center gap-2 overflow-x-auto no-scrollbar border-t border-slate-100 dark:border-slate-800/80 bg-slate-50/40 dark:bg-slate-900/40">
           <button
             onClick={() => {
-              setInputMessage('Can you explain the difference between Promise.all and Promise.allSettled?');
+              setInputMessage('give me a flow to study c++');
+            }}
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-blue-500 whitespace-nowrap cursor-pointer transition-colors"
+          >
+            <Code className="w-3 h-3 text-blue-500" />
+            <span>C++ Study Flow</span>
+          </button>
+          <button
+            onClick={() => {
+              setInputMessage('How to learn Python and Machine Learning?');
             }}
             type="button"
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-blue-500 whitespace-nowrap cursor-pointer transition-colors"
           >
             <Zap className="w-3 h-3 text-amber-500" />
+            <span>Python & AI Roadmap</span>
+          </button>
+          <button
+            onClick={() => {
+              setInputMessage('Explain Promise.all vs Promise.allSettled');
+            }}
+            type="button"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-blue-500 whitespace-nowrap cursor-pointer transition-colors"
+          >
+            <Layers className="w-3 h-3 text-purple-500" />
             <span>Promise.all vs allSettled</span>
-          </button>
-          <button
-            onClick={() => {
-              setInputMessage('Show me how to horizontally and vertically center an element with Flexbox.');
-            }}
-            type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-blue-500 whitespace-nowrap cursor-pointer transition-colors"
-          >
-            <Layers className="w-3 h-3 text-blue-500" />
-            <span>Flexbox Centering</span>
-          </button>
-          <button
-            onClick={() => {
-              setInputMessage('How do I handle React cleanup inside useEffect with AbortController?');
-            }}
-            type="button"
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800 text-[11px] font-medium text-slate-600 dark:text-slate-300 hover:border-blue-500 whitespace-nowrap cursor-pointer transition-colors"
-          >
-            <Code className="w-3 h-3 text-purple-500" />
-            <span>AbortController</span>
           </button>
         </div>
 
@@ -412,7 +519,7 @@ export const AIMentorPage: React.FC = () => {
                 type="text"
                 value={inputMessage}
                 onChange={(e) => setInputMessage(e.target.value)}
-                placeholder="Message AI Mentor..."
+                placeholder="Message AI Mentor (e.g. 'give me a flow to study c++', 'explain promises', etc.)..."
                 disabled={isSending}
                 className="flex-1 bg-transparent border-0 text-xs sm:text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none"
               />
